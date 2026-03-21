@@ -1,0 +1,95 @@
+version: "3.9"
+
+services:
+  auth-db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: auth_user
+      POSTGRES_PASSWORD: auth_password
+    volumes:
+      - auth-db-data:/var/lib/postgresql/data
+    networks:
+      - drivemind
+
+  core-db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: core_db
+      POSTGRES_USER: core_user
+      POSTGRES_PASSWORD: core_password
+    volumes:
+      - core-db-data:/var/lib/postgresql/data
+    networks:
+      - drivemind
+
+  ai-db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ai_db
+      POSTGRES_USER: ai_user
+      POSTGRES_PASSWORD: ai_password
+    volumes:
+      - ai-db-data:/var/lib/postgresql/data
+    networks:
+      - drivemind
+
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8000"
+    environment:
+      DB_HOST: auth-db
+      DB_PORT: "5432"
+      DB_NAME: auth_db
+      DB_USER: auth_user
+      DB_PASSWORD: auth_password
+    depends_on:
+      - auth-db
+    networks:
+      - drivemind
+
+  core-service:
+    build:
+      context: ./services/core-service
+      dockerfile: Dockerfile
+    ports:
+      - "8002:8000"
+    environment:
+      DB_HOST: core-db
+      DB_PORT: "5432"
+      DB_NAME: core_db
+      DB_USER: core_user
+      DB_PASSWORD: core_password
+    depends_on:
+      - core-db
+    networks:
+      - drivemind
+
+  ai-service:
+    build:
+      context: ./services/ai-service
+      dockerfile: Dockerfile
+    ports:
+      - "8003:8000"
+    environment:
+      DB_HOST: ai-db
+      DB_PORT: "5432"
+      DB_NAME: ai_db
+      DB_USER: ai_user
+      DB_PASSWORD: ai_password
+    depends_on:
+      - ai-db
+    networks:
+      - drivemind
+
+networks:
+  drivemind:
+    driver: bridge
+
+volumes:
+  auth-db-data:
+  core-db-data:
+  ai-db-data:
