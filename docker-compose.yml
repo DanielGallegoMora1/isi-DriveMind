@@ -9,6 +9,7 @@ services:
       POSTGRES_PASSWORD: auth_password
     volumes:
       - auth-db-data:/var/lib/postgresql/data
+      - ./services/auth-service/db/init:/docker-entrypoint-initdb.d
     networks:
       - drivemind
 
@@ -20,6 +21,7 @@ services:
       POSTGRES_PASSWORD: core_password
     volumes:
       - core-db-data:/var/lib/postgresql/data
+      - ./services/core-service/db/init:/docker-entrypoint-initdb.d
     networks:
       - drivemind
 
@@ -31,6 +33,7 @@ services:
       POSTGRES_PASSWORD: ai_password
     volumes:
       - ai-db-data:/var/lib/postgresql/data
+      - ./services/ai-service/db/init:/docker-entrypoint-initdb.d
     networks:
       - drivemind
 
