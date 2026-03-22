@@ -4,9 +4,9 @@ services:
   auth-db:
     image: postgres:15
     environment:
-      POSTGRES_DB: auth_db
-      POSTGRES_USER: auth_user
-      POSTGRES_PASSWORD: auth_password
+      POSTGRES_DB: ${AUTH_DB_NAME:-auth_db}
+      POSTGRES_USER: ${AUTH_DB_USER:-auth_user}
+      POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD:-auth_password}
     volumes:
       - auth-db-data:/var/lib/postgresql/data
       - ./services/auth-service/db/init:/docker-entrypoint-initdb.d
@@ -16,9 +16,9 @@ services:
   core-db:
     image: postgres:15
     environment:
-      POSTGRES_DB: core_db
-      POSTGRES_USER: core_user
-      POSTGRES_PASSWORD: core_password
+      POSTGRES_DB: ${CORE_DB_NAME:-core_db}
+      POSTGRES_USER: ${CORE_DB_USER:-core_user}
+      POSTGRES_PASSWORD: ${CORE_DB_PASSWORD:-core_password}
     volumes:
       - core-db-data:/var/lib/postgresql/data
       - ./services/core-service/db/init:/docker-entrypoint-initdb.d
@@ -28,9 +28,9 @@ services:
   ai-db:
     image: postgres:15
     environment:
-      POSTGRES_DB: ai_db
-      POSTGRES_USER: ai_user
-      POSTGRES_PASSWORD: ai_password
+      POSTGRES_DB: ${AI_DB_NAME:-ai_db}
+      POSTGRES_USER: ${AI_DB_USER:-ai_user}
+      POSTGRES_PASSWORD: ${AI_DB_PASSWORD:-ai_password}
     volumes:
       - ai-db-data:/var/lib/postgresql/data
       - ./services/ai-service/db/init:/docker-entrypoint-initdb.d
@@ -46,9 +46,9 @@ services:
     environment:
       DB_HOST: auth-db
       DB_PORT: "5432"
-      DB_NAME: auth_db
-      DB_USER: auth_user
-      DB_PASSWORD: auth_password
+      DB_NAME: ${AUTH_DB_NAME:-auth_db}
+      DB_USER: ${AUTH_DB_USER:-auth_user}
+      DB_PASSWORD: ${AUTH_DB_PASSWORD:-auth_password}
     depends_on:
       - auth-db
     networks:
@@ -64,9 +64,9 @@ services:
     environment:
       DB_HOST: core-db
       DB_PORT: "5432"
-      DB_NAME: core_db
-      DB_USER: core_user
-      DB_PASSWORD: core_password
+      DB_NAME: ${CORE_DB_NAME:-core_db}
+      DB_USER: ${CORE_DB_USER:-core_user}
+      DB_PASSWORD: ${CORE_DB_PASSWORD:-core_password}
     depends_on:
       - core-db
     networks:
@@ -81,9 +81,10 @@ services:
     environment:
       DB_HOST: ai-db
       DB_PORT: "5432"
-      DB_NAME: ai_db
-      DB_USER: ai_user
-      DB_PASSWORD: ai_password
+      DB_NAME: ${AI_DB_NAME:-ai_db}
+      DB_USER: ${AI_DB_USER:-ai_user}
+      DB_PASSWORD: ${AI_DB_PASSWORD:-ai_password}
+      HF_TOKEN: ${HF_TOKEN}
     depends_on:
       - ai-db
     networks:
