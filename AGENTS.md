@@ -176,33 +176,209 @@ available in .opencode/skills/ai-db
 
 ---
 
-## 6. Interfaces (API)
+## 6. Interfaces (API) - Contract Definition
 
-### Auth Service
+This section defines the API contracts to be implemented later. It is authoritative for how services should expose endpoints and payloads.
 
-* POST /auth/login
-* POST /auth/students
-* GET /auth/me
+### 6.1 Global API Conventions
 
----
+* Base path: `/v1` for all public endpoints.
+* Media type: `application/json` for requests and responses.
+* Naming: `snake_case` for all JSON fields.
+* Dates: ISO 8601 with timezone, e.g. `2026-03-23T10:15:30Z`.
+* IDs: UUID v4 for all public identifiers.
+* Auth: JWT in `Authorization: Bearer <token>` header.
+* Roles: `student`, `school_admin`, `system_admin`.
+* Errors: RFC 7807 `application/problem+json` with optional `errors` list.
+* Pagination: `limit` + `offset` with `total` in responses.
+* Sorting: `sort=field` or `sort=-field` (descending).
+* Filtering: simple query filters by field name.
 
-### Core Service
+Error schema (RFC 7807):
 
-* GET /permits
-* GET /topics
-* GET /questions/random
-* POST /tests/generate
-* POST /tests/{id}/submit
-* GET /stats
+* `type`: URI identifying the error type.
+* `title`: short, human readable.
+* `status`: HTTP status code.
+* `detail`: specific details.
+* `instance`: request path or trace id.
+* `errors`: list of `{field, message}` for validation.
 
----
+Pagination response schema:
 
-### AI Service
+* `items`: array
+* `total`: integer
+* `limit`: integer
+* `offset`: integer
 
-* POST /ai/conversations
-* GET /ai/conversations
-* GET /ai/conversations/{id}
-* POST /ai/messages
+### 6.2 Auth Service (auth-service)
+
+Responsibilities: authentication, users, driving schools, student licenses.
+
+#### Endpoints
+
+* POST `/v1/auth/login`
+  * Auth: none
+  * Purpose: authenticate user and issue JWT.
+  * Request: `{email, password}`
+  * Response: `{access_token, token_type, expires_in, user}`
+  * Errors: 401 invalid credentials, 422 validation
+
+* GET `/v1/auth/me`
+  * Auth: required
+  * Purpose: return authenticated user profile.
+  * Response: `{user}`
+
+* POST `/v1/auth/students`
+  * Auth: `school_admin`
+  * Purpose: create a student under the admin's school.
+  * Request: `{email, password, full_name, document_id, licenses[]}`
+  * Response: `{student}`
+  * Errors: 409 email already exists
+
+* POST `/v1/auth/schools`
+  * Auth: `system_admin`
+  * Purpose: create a driving school and its admin account.
+  * Request: `{email, password, name, tax_id?, address?, phone?}`
+  * Response: `{school, admin_user}`
+  * Errors: 409 email already exists
+
+* GET `/v1/auth/schools`
+  * Auth: `system_admin`
+  * Purpose: list schools with pagination and filters.
+  * Query: `limit`, `offset`, `sort`, optional filters (`name`, `active`)
+  * Response: paginated `{items, total, limit, offset}`
+
+* GET `/v1/auth/schools/{school_id}`
+  * Auth: `system_admin`
+  * Purpose: return details for one school.
+  * Response: `{school}`
+
+* PATCH `/v1/auth/schools/{school_id}`
+  * Auth: `system_admin`
+  * Purpose: update school attributes (name, status, contacts).
+  * Request: `{name?, active?, address?, phone?}`
+  * Response: `{school}`
+
+* GET `/v1/auth/students`
+  * Auth: `school_admin`
+  * Purpose: list students for the admin's school with pagination and filters.
+  * Query: `limit`, `offset`, `sort`, optional filters (`license`, `active`)
+  * Response: paginated `{items, total, limit, offset}`
+
+* GET `/v1/auth/students/{student_id}`
+  * Auth: `school_admin`
+  * Purpose: return details for one student.
+  * Response: `{student}`
+
+* PATCH `/v1/auth/students/{student_id}`
+  * Auth: `school_admin`
+  * Purpose: update student attributes (name, document, status).
+  * Request: `{full_name?, document_id?, active?}`
+  * Response: `{student}`
+
+* POST `/v1/auth/students/{student_id}/licenses`
+  * Auth: `school_admin`
+  * Purpose: assign licenses to a student.
+  * Request: `{license_codes[]}`
+  * Response: `{student}`
+
+* DELETE `/v1/auth/students/{student_id}/licenses/{license_code}`
+  * Auth: `school_admin`
+  * Purpose: revoke a specific license from a student.
+  * Response: 204
+
+#### Conceptual Schemas
+
+* User: `{id, email, full_name, role, created_at, updated_at}`
+* Student: `{id, email, full_name, document_id, licenses[], active, created_at, updated_at}`
+* License: `{code, name}`
+* School: `{id, name, email, tax_id?, address?, phone?, active, created_at, updated_at}`
+
+### 6.3 Core Service (core-service)
+
+Responsibilities: question bank, test generation, correction, statistics.
+
+#### Endpoints
+
+* GET `/v1/permits`
+  * Auth: required
+  * Response: `{items}` (list of licenses/permits)
+
+* GET `/v1/topics`
+  * Auth: required
+  * Query: `permit_code` (optional)
+  * Response: `{items}`
+
+* GET `/v1/questions/random`
+  * Auth: required
+  * Query: `permit_code`, `topic_id` (optional), `count` (default 30)
+  * Response: `{items}` (question list)
+
+* POST `/v1/tests/generate`
+  * Auth: required
+  * Request: `{permit_code, topic_id?, mode, count?}` where mode in `license|topic|random|failed`
+  * Response: `{test}` with 30 questions
+
+* POST `/v1/tests/{test_id}/submit`
+  * Auth: required
+  * Request: `{answers[]}` where answer `{question_id, option_id}`
+  * Response: `{result}` including `score`, `correct_count`, `wrong_count`, `passed`, `by_topic[]`
+
+* GET `/v1/tests/{test_id}`
+  * Auth: required
+  * Response: `{test}` (test metadata and questions)
+
+* GET `/v1/stats`
+  * Auth: required
+  * Query: `student_id` (optional, admin only), `permit_code` (optional)
+  * Response: `{summary, by_topic[], history[], trend[], failed_distribution[]}`
+
+#### Conceptual Schemas
+
+* Question: `{id, text, options[], topic_id, permit_code}`
+* Option: `{id, text, is_correct?}` (is_correct only internal, not exposed)
+* Test: `{id, student_id, permit_code, topic_id?, created_at, questions[]}`
+* Result: `{test_id, correct_count, wrong_count, passed, score, by_topic[]}`
+* StatsSummary: `{total_tests, passed_tests, failed_tests, accuracy_pct}`
+* StatsByTopic: `{topic_id, correct, wrong, accuracy_pct}`
+* StatsHistory: `{test_id, created_at, passed, score, correct_count, wrong_count, accuracy_pct, permit_code?, topic_id?}`
+* StatsTrend: `{period, tests, accuracy_pct}`
+* FailedDistribution: `{topic_id, wrong_count}`
+
+### 6.4 AI Service (ai-service)
+
+Responsibilities: conversation management, AI integration, message persistence.
+
+#### Endpoints
+
+* POST `/v1/ai/conversations`
+  * Auth: required
+  * Request: `{title?}`
+  * Response: `{conversation}`
+
+* GET `/v1/ai/conversations`
+  * Auth: required
+  * Query: `limit`, `offset`, `sort`
+  * Response: paginated `{items, total, limit, offset}`
+
+* GET `/v1/ai/conversations/{conversation_id}`
+  * Auth: required
+  * Response: `{conversation, messages[]}`
+
+* POST `/v1/ai/messages`
+  * Auth: required
+  * Request: `{conversation_id, content}`
+  * Response: `{message, assistant_reply}`
+
+* GET `/v1/ai/messages`
+  * Auth: required
+  * Query: `conversation_id`, `limit`, `offset`
+  * Response: paginated `{items, total, limit, offset}`
+
+#### Conceptual Schemas
+
+* Conversation: `{id, user_id, title, created_at, updated_at}`
+* Message: `{id, conversation_id, role, content, created_at}` (role in `user|assistant|system`)
 
 ---
 
