@@ -21,8 +21,6 @@ This document defines:
 * Data model
 * Technical prototypes developed
 
-Thus fulfilling Sprint 2 requirements and serving as a foundation for full system development.
-
 ---
 
 ## 1. System Requirements
@@ -30,7 +28,35 @@ Thus fulfilling Sprint 2 requirements and serving as a foundation for full syste
 ### 1.1 Roles
 
 * Student
-* Driving school (administrator)
+* Schoold admin
+* System admin
+
+### 1.3 Requirements Checklist (true/false)
+
+* [] Authentication with JWT
+* [] Roles defined: `student`, `school_admin`, `system_admin`
+* [] School registration by `system_admin`
+* [] Student management by schools
+* [] License assignment and revocation for students
+* [] 30-question test generation
+* [] Tests by permit (`license`)
+* [] Tests by topic (`topic`)
+* [] Random tests (`random`)
+* [] Failed-questions tests (`failed`)
+* [] Automatic test correction
+* [] Fail rule: wrong_count > 3
+* [] General stats (passed/failed counts)
+* [] Global accuracy percentage
+* [] Performance by topic
+* [] Chronological test history
+* [] Trend/temporal progress metrics
+* [] Failed distribution by topic
+* [] AI chat access in the system
+* [] Multiple conversations
+* [] Message persistence
+* [] External AI API integration (HuggingFace)
+* [] Microservices architecture (auth/core/ai)
+* [] Database per service (PostgreSQL)
 
 ### 1.2 Main Functionalities
 
