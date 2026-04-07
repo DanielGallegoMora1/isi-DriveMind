@@ -5,3 +5,8 @@ psycopg2-binary
 pydantic-settings
 pyjwt
 passlib[bcrypt]
+bcrypt==3.2.0
+email-validator
+pytest
+pytest-cov
+httpx
