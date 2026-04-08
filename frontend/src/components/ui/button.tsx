@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import { clsx } from 'clsx'
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'brand'
 
@@ -18,10 +19,14 @@ const variantClasses: Record<Variant, string> = {
     'bg-[#10b981] text-white font-bold hover:bg-[#059669] transition-colors duration-200',
 }
 
-export function Button({ variant = 'primary', className = '', children, ...props }: ButtonProps) {
+export function Button({ variant = 'primary', className, children, ...props }: ButtonProps) {
   return (
     <button
-      className={`min-h-12 rounded-full px-5 py-3 border-0 ${variantClasses[variant]} ${className}`}
+      className={clsx(
+        'min-h-12 rounded-full px-5 py-3 border-0',
+        variantClasses[variant],
+        className,
+      )}
       {...props}
     >
       {children}

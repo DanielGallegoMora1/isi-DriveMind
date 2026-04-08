@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { AuthContext } from './auth-context'
-import { getCurrentUser, login as loginRequest } from './auth-api'
-import type { AuthUser } from '../../types/auth'
+import * as authRequest from './api/auth.api'
+import type { AuthUser } from './types'
 
 type AuthStatus = 'loading' | 'guest' | 'authenticated'
 
@@ -61,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const restoreSession = async () => {
       try {
-        const currentUser = await getCurrentUser(accessToken)
+        const currentUser = await authRequest.getCurrentUser(accessToken)
 
         if (cancelled) {
           return
@@ -90,7 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [accessToken])
 
   async function login(values: { email: string; password: string }) {
-    const response = await loginRequest(values)
+    const response = await authRequest.login(values)
 
     setAccessToken(response.access_token)
     setUser(response.user)

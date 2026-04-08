@@ -1,6 +1,6 @@
-import { env } from '../../config/env'
-import { requestJson } from '../../lib/http'
-import type { AuthUser, LoginRequest, LoginResponse } from '../../types/auth'
+import { env } from '../../../config/env'
+import { requestJson } from '../../../lib/http'
+import type { AuthUser, LoginRequest, LoginResponse } from '../types'
 
 const authBaseUrl = `${env.authServiceUrl}/v1/auth`
 

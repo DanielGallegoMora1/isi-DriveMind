@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { useAuth } from '../features/auth/auth-context'
+import { useAuth } from '../features/auth'
 import { AiChatIcon, HomeIcon, StatsIcon, TestsIcon } from './icons'
 import { Button } from './ui/button'
 
