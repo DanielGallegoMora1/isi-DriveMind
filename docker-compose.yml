@@ -1,0 +1,99 @@
+services:
+  auth-db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ${AUTH_DB_NAME:-auth_db}
+      POSTGRES_USER: ${AUTH_DB_USER:-auth_user}
+      POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD:-auth_password}
+    volumes:
+      - auth-db-data:/var/lib/postgresql/data
+      - ./services/auth-service/db/init:/docker-entrypoint-initdb.d
+    networks:
+      - drivemind
+
+  core-db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ${CORE_DB_NAME:-core_db}
+      POSTGRES_USER: ${CORE_DB_USER:-core_user}
+      POSTGRES_PASSWORD: ${CORE_DB_PASSWORD:-core_password}
+    volumes:
+      - core-db-data:/var/lib/postgresql/data
+      - ./services/core-service/db/init:/docker-entrypoint-initdb.d
+    networks:
+      - drivemind
+
+  ai-db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ${AI_DB_NAME:-ai_db}
+      POSTGRES_USER: ${AI_DB_USER:-ai_user}
+      POSTGRES_PASSWORD: ${AI_DB_PASSWORD:-ai_password}
+    volumes:
+      - ai-db-data:/var/lib/postgresql/data
+      - ./services/ai-service/db/init:/docker-entrypoint-initdb.d
+    networks:
+      - drivemind
+
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8000"
+    environment:
+      BOOTSTRAP_DEMO_USERS: ${AUTH_BOOTSTRAP_DEMO_USERS:-true}
+      DB_HOST: auth-db
+      DB_PORT: "5432"
+      DB_NAME: ${AUTH_DB_NAME:-auth_db}
+      DB_USER: ${AUTH_DB_USER:-auth_user}
+      DB_PASSWORD: ${AUTH_DB_PASSWORD:-auth_password}
+    depends_on:
+      - auth-db
+    networks:
+      - drivemind
+
+  core-service:
+    build:
+      context: ./services/core-service
+      dockerfile: Dockerfile
+    # Seed command: docker compose run --rm core-service python scripts/seed_questions.py
+    ports:
+      - "8002:8000"
+    environment:
+      DB_HOST: core-db
+      DB_PORT: "5432"
+      DB_NAME: ${CORE_DB_NAME:-core_db}
+      DB_USER: ${CORE_DB_USER:-core_user}
+      DB_PASSWORD: ${CORE_DB_PASSWORD:-core_password}
+    depends_on:
+      - core-db
+    networks:
+      - drivemind
+
+  ai-service:
+    build:
+      context: ./services/ai-service
+      dockerfile: Dockerfile
+    ports:
+      - "8003:8000"
+    environment:
+      DB_HOST: ai-db
+      DB_PORT: "5432"
+      DB_NAME: ${AI_DB_NAME:-ai_db}
+      DB_USER: ${AI_DB_USER:-ai_user}
+      DB_PASSWORD: ${AI_DB_PASSWORD:-ai_password}
+      HF_TOKEN: ${HF_TOKEN}
+    depends_on:
+      - ai-db
+    networks:
+      - drivemind
+
+networks:
+  drivemind:
+    driver: bridge
+
+volumes:
+  auth-db-data:
+  core-db-data:
+  ai-db-data:

@@ -1,0 +1,7 @@
+.DS_Store
+.env
+__pycache__/
+*.py[cod]
+node_modules/
+dist/
+.atl/skill-registry.md

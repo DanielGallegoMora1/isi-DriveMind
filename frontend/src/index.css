@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+@theme {
+  /* Paleta navy */
+  --color-navy-950: #081120;
+  --color-navy-900: #0d1729;
+  --color-navy-800: #101c31;
+  --color-navy-700: #0a1423;
+  --color-navy-600: rgba(10, 20, 35, 0.7);
+
+  /* Acentos */
+  --color-sky-brand: #7bd0ff;
+  --color-green-brand: #4ade80;
+  --color-green-brand-dark: #059669;
+  --color-green-brand-mid: #10b981;
+
+  /* Borders sutiles */
+  --color-border-subtle: rgba(141, 177, 229, 0.12);
+  --color-border-nav: rgba(123, 208, 255, 0.28);
+  --color-border-nav-bg: rgba(123, 208, 255, 0.12);
+
+  /* Sidebar */
+  --color-sidebar-bg: rgba(7, 15, 27, 0.86);
+
+  /* Tipografía */
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    min-width: 320px;
+    font-family: var(--font-sans);
+    font-synthesis: none;
+    font-weight: 400;
+    line-height: 1.5;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    color: #d8e1f0;
+    background: #081120;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at top, rgba(51, 129, 255, 0.22), transparent 32%),
+      linear-gradient(180deg, #081120 0%, #0d1729 52%, #101c31 100%);
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  button, input {
+    font: inherit;
+  }
+
+  button {
+    cursor: pointer;
+  }
+}
