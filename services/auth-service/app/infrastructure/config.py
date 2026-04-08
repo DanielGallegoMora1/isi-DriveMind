@@ -8,7 +8,14 @@ class Settings(BaseSettings):
     db_name: str
     db_user: str
     db_password: str
+    secret_key: str = "drivemind-super-secret-change-in-prod"
+    algorithm: str = "HS256"
+    access_token_expire_minutes: int = 30
+
+    model_config = {"env_file": ".env", "extra": "ignore"}
+
     demo_system_admin_email: str = "system.admin@example.com"
+
     demo_system_admin_password: str = "Admin123!"
     demo_system_admin_full_name: str = "DriveMind System Admin"
     demo_school_name: str = "DriveMind Demo School"

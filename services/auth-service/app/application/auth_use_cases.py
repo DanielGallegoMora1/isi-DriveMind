@@ -1,5 +1,5 @@
 from uuid import UUID
-
+from app.infrastructure.config import settings
 import jwt
 from passlib.context import CryptContext
 
@@ -8,9 +8,9 @@ from app.domain.ports import UserRepository
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-SECRET_KEY = "drivemind-super-secret-change-in-prod"
-ALGORITHM = "HS256"
-TOKEN_EXPIRE_SECONDS = 3600
+SECRET_KEY = settings.secret_key
+ALGORITHM = settings.algorithm
+TOKEN_EXPIRE_SECONDS = settings.access_token_expire_minutes * 60
 
 
 def _verify_password(plain: str, hashed: str) -> bool:
