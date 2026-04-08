@@ -14,9 +14,13 @@ function ProtectedLayout() {
 
   if (isLoading) {
     return (
-      <div className="screen-state">
-        <p className="eyebrow">DriveMind</p>
-        <h1>Recuperando sesion</h1>
+      <div className="grid min-h-svh place-items-center px-6 py-12 text-center">
+        <div>
+          <p className="m-0 text-[0.78rem] font-bold tracking-[0.16em] uppercase text-[#7bd0ff]">
+            DriveMind
+          </p>
+          <h1 className="mt-3 text-[#f5f7fb]">Recuperando sesión</h1>
+        </div>
       </div>
     )
   }
@@ -33,9 +37,13 @@ function LoginOnlyOutlet() {
 
   if (isLoading) {
     return (
-      <div className="screen-state">
-        <p className="eyebrow">DriveMind</p>
-        <h1>Cargando acceso</h1>
+      <div className="grid min-h-svh place-items-center px-6 py-12 text-center">
+        <div>
+          <p className="m-0 text-[0.78rem] font-bold tracking-[0.16em] uppercase text-[#7bd0ff]">
+            DriveMind
+          </p>
+          <h1 className="mt-3 text-[#f5f7fb]">Cargando acceso</h1>
+        </div>
       </div>
     )
   }

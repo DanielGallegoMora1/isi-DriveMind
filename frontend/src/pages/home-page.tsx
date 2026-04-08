@@ -6,13 +6,14 @@ export function HomePage() {
 
   return (
     <SectionPage
-      description={`Vista base para orientar el flujo inicial de ${user?.full_name ?? 'la app'} dentro del ecosistema DriveMind.`}
+      eyebrow="Inicio"
+      title="Dashboard"
+      description={`Bienvenido, ${user?.full_name ?? 'estudiante'}. Desde aquí accedés al resumen de tu actividad en DriveMind.`}
       highlights={[
         { label: 'Rol activo', value: user?.role ?? 'guest' },
         { label: 'Auth source', value: 'auth-service' },
-        { label: 'Sprint focus', value: 'frontend foundation' },
+        { label: 'Estado', value: 'Conectado' },
       ]}
-      title="Dashboard / Home"
     />
   )
 }
