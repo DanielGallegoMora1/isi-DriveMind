@@ -3,11 +3,11 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     bootstrap_demo_users: bool = False
-    db_host: str
-    db_port: str
-    db_name: str
-    db_user: str
-    db_password: str
+    db_host: str = "localhost"
+    db_port: str = "5432"
+    db_name: str = "drivemind"
+    db_user: str = "postgres"
+    db_password: str = "postgres"
     secret_key: str = "drivemind-super-secret-change-in-prod"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
