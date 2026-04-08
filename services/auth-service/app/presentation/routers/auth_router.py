@@ -10,7 +10,7 @@ from app.infrastructure.repositories.user_repository import SqlUserRepository
 from app.presentation.dependencies import CurrentUserDep
 from app.presentation.schemas import LoginRequest, LoginResponse, UserResponse
 
-router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
+router = APIRouter(prefix="/v1/auth", tags=["auth"])
 
 DbDep = Annotated[Session, Depends(get_db)]
 
