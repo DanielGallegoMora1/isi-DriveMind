@@ -1,12 +1,29 @@
-from fastapi import FastAPI, Depends
-from sqlalchemy import text
-from sqlalchemy.orm import Session
+from contextlib import asynccontextmanager
 from typing import Annotated
 
-from app.infrastructure.database.database import get_db
+from fastapi import Depends, FastAPI
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+
+from app.infrastructure.bootstrap import ensure_demo_users
+from app.infrastructure.config import settings
+from app.infrastructure.database.database import Base, SessionLocal, engine, get_db
 from app.presentation.routers import auth_router, school_router, student_router
 
-app = FastAPI(title="DriveMind Auth Service", version="1.0.0")
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    Base.metadata.create_all(bind=engine)
+    if settings.bootstrap_demo_users:
+        db = SessionLocal()
+        try:
+            ensure_demo_users(db)
+        finally:
+            db.close()
+    yield
+
+
+app = FastAPI(title="DriveMind Auth Service", version="1.0.0", lifespan=lifespan)
 
 app.include_router(auth_router.router)
 app.include_router(school_router.router)

@@ -11,6 +11,14 @@
 docker compose up --build
 ```
 
+The local `auth-service` bootstraps reusable demo credentials on startup by default.
+
+Demo users:
+
+- `system.admin@example.com` / `Admin123!`
+- `school.admin@example.com` / `School123!`
+- `student@example.com` / `Student123!`
+
 This starts:
 
 - Auth service on `http://localhost:8001`
@@ -33,4 +41,10 @@ To reset databases:
 
 ```bash
 docker compose down -v
+```
+
+To disable the local auth bootstrap:
+
+```bash
+AUTH_BOOTSTRAP_DEMO_USERS=false docker compose up --build
 ```

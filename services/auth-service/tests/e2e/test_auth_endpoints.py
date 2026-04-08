@@ -33,3 +33,24 @@ def test_login_endpoint_failure(client):
         "/v1/auth/login", json={"email": "non@existent.com", "password": "bad"}
     )
     assert response.status_code == 401
+
+
+def test_login_endpoint_accepts_bootstrap_demo_credentials(client, db_session, monkeypatch):
+    from app.infrastructure.bootstrap import ensure_demo_users
+    from app.infrastructure.config import settings
+
+    monkeypatch.setattr(settings, "bootstrap_demo_users", True)
+    ensure_demo_users(db_session)
+
+    response = client.post(
+        "/v1/auth/login",
+        json={
+            "email": settings.demo_system_admin_email,
+            "password": settings.demo_system_admin_password,
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["user"]["email"] == settings.demo_system_admin_email
+    assert data["user"]["role"] == "system_admin"

@@ -42,6 +42,7 @@ services:
     ports:
       - "8001:8000"
     environment:
+      BOOTSTRAP_DEMO_USERS: ${AUTH_BOOTSTRAP_DEMO_USERS:-true}
       DB_HOST: auth-db
       DB_PORT: "5432"
       DB_NAME: ${AUTH_DB_NAME:-auth_db}
