@@ -1,34 +1,78 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
+import { AppShell } from './components/app-shell'
+import { useAuth } from './features/auth/auth-context'
+import { AuthProvider } from './features/auth/auth-provider'
+import { AiChatPage } from './pages/ai-chat-page'
+import { HomePage } from './pages/home-page'
+import { LoginPage } from './pages/login-page'
+import { StatsPage } from './pages/stats-page'
+import { TestsPage } from './pages/tests-page'
+
+function ProtectedLayout() {
+  const { isAuthenticated, isLoading } = useAuth()
+  const location = useLocation()
+
+  if (isLoading) {
+    return (
+      <div className="screen-state">
+        <p className="eyebrow">DriveMind</p>
+        <h1>Recuperando sesion</h1>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate replace state={{ from: location }} to="/login" />
+  }
+
+  return <AppShell />
+}
+
+function LoginOnlyOutlet() {
+  const { isAuthenticated, isLoading } = useAuth()
+
+  if (isLoading) {
+    return (
+      <div className="screen-state">
+        <p className="eyebrow">DriveMind</p>
+        <h1>Cargando acceso</h1>
+      </div>
+    )
+  }
+
+  if (isAuthenticated) {
+    return <Navigate replace to="/" />
+  }
+
+  return <Outlet />
+}
+
+function AppRoutes() {
+  return (
+    <Routes>
+      <Route element={<LoginOnlyOutlet />}>
+        <Route element={<LoginPage />} path="/login" />
+      </Route>
+
+      <Route element={<ProtectedLayout />}>
+        <Route element={<HomePage />} path="/" />
+        <Route element={<TestsPage />} path="/tests" />
+        <Route element={<StatsPage />} path="/stats" />
+        <Route element={<AiChatPage />} path="/ai-chat" />
+      </Route>
+
+      <Route element={<Navigate replace to="/" />} path="*" />
+    </Routes>
+  )
+}
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <AuthProvider>
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
+    </AuthProvider>
   )
 }
 
