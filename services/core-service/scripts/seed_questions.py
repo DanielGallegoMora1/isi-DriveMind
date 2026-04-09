@@ -36,7 +36,7 @@ REQUIRED_QUESTION_KEYS = {
     "requiere_imagen",
     "dificultad",
 }
-ALLOWED_OPTION_LABELS = {"a", "b", "c", "d"}
+ALLOWED_OPTION_LABELS = {"a", "b", "c"}
 DEFAULT_SOURCE_PATH = Path(__file__).with_name("preguntas.json")
 
 

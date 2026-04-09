@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS question_options (
     UNIQUE (question_id, label),
 
   CONSTRAINT chk_question_options_label
-    CHECK (label IN ('a','b','c','d'))
+    CHECK (label IN ('a','b','c'))
 );
 
 -- 1:1 (una correcta por pregunta)
@@ -82,7 +82,7 @@ CREATE TABLE IF NOT EXISTS question_correct_options (
     ON DELETE CASCADE,
 
   CONSTRAINT chk_question_correct_label
-    CHECK (correct_label IN ('a','b','c','d'))
+    CHECK (correct_label IN ('a','b','c'))
 );
 
 -- TESTS
@@ -184,7 +184,7 @@ CREATE TABLE IF NOT EXISTS attempt_answers (
     UNIQUE (attempt_id, question_id),
 
   CONSTRAINT chk_attempt_answers_label
-    CHECK (selected_label IN ('a','b','c','d'))
+    CHECK (selected_label IN ('a','b','c'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_topics_permit_id ON topics(permit_id);

@@ -57,6 +57,8 @@ services:
     build:
       context: ./services/core-service
       dockerfile: Dockerfile
+    volumes:
+      - ./services/core-service:/app
     # Seed command: docker compose run --rm core-service python scripts/seed_questions.py
     ports:
       - "8002:8000"
