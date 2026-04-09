@@ -208,7 +208,7 @@ This section defines the API contracts to be implemented later. It is authoritat
 
 ### 6.1 Global API Conventions
 
-* Base path: `/v1` for all public endpoints.
+* Base path: `/api/v1` for all public endpoints.
 * Media type: `application/json` for requests and responses.
 * Naming: `snake_case` for all JSON fields.
 * Dates: ISO 8601 with timezone, e.g. `2026-03-23T10:15:30Z`.
@@ -242,73 +242,73 @@ Responsibilities: authentication, users, driving schools, student licenses.
 
 #### Endpoints
 
-* POST `/v1/auth/login`
+* POST `/api/v1/auth/login`
   * Auth: none
   * Purpose: authenticate user and issue JWT.
   * Request: `{email, password}`
   * Response: `{access_token, token_type, expires_in, user}`
   * Errors: 401 invalid credentials, 422 validation
 
-* GET `/v1/auth/me`
+* GET `/api/v1/auth/me`
   * Auth: required
   * Purpose: return authenticated user profile.
   * Response: `{user}`
 
-* POST `/v1/auth/students`
+* POST `/api/v1/auth/students`
   * Auth: `school_admin`
   * Purpose: create a student under the admin's school.
   * Request: `{email, password, full_name, document_id, licenses[]}`
   * Response: `{student}`
   * Errors: 409 email already exists
 
-* POST `/v1/auth/schools`
+* POST `/api/v1/auth/schools`
   * Auth: `system_admin`
   * Purpose: create a driving school and its admin account.
   * Request: `{email, password, name, tax_id?, address?, phone?}`
   * Response: `{school, admin_user}`
   * Errors: 409 email already exists
 
-* GET `/v1/auth/schools`
+* GET `/api/v1/auth/schools`
   * Auth: `system_admin`
   * Purpose: list schools with pagination and filters.
   * Query: `limit`, `offset`, `sort`, optional filters (`name`, `active`)
   * Response: paginated `{items, total, limit, offset}`
 
-* GET `/v1/auth/schools/{school_id}`
+* GET `/api/v1/auth/schools/{school_id}`
   * Auth: `system_admin`
   * Purpose: return details for one school.
   * Response: `{school}`
 
-* PATCH `/v1/auth/schools/{school_id}`
+* PATCH `/api/v1/auth/schools/{school_id}`
   * Auth: `system_admin`
   * Purpose: update school attributes (name, status, contacts).
   * Request: `{name?, active?, address?, phone?}`
   * Response: `{school}`
 
-* GET `/v1/auth/students`
+* GET `/api/v1/auth/students`
   * Auth: `school_admin`
   * Purpose: list students for the admin's school with pagination and filters.
   * Query: `limit`, `offset`, `sort`, optional filters (`license`, `active`)
   * Response: paginated `{items, total, limit, offset}`
 
-* GET `/v1/auth/students/{student_id}`
+* GET `/api/v1/auth/students/{student_id}`
   * Auth: `school_admin`
   * Purpose: return details for one student.
   * Response: `{student}`
 
-* PATCH `/v1/auth/students/{student_id}`
+* PATCH `/api/v1/auth/students/{student_id}`
   * Auth: `school_admin`
   * Purpose: update student attributes (name, document, status).
   * Request: `{full_name?, document_id?, active?}`
   * Response: `{student}`
 
-* POST `/v1/auth/students/{student_id}/licenses`
+* POST `/api/v1/auth/students/{student_id}/licenses`
   * Auth: `school_admin`
   * Purpose: assign licenses to a student.
   * Request: `{license_codes[]}`
   * Response: `{student}`
 
-* DELETE `/v1/auth/students/{student_id}/licenses/{license_code}`
+* DELETE `/api/v1/auth/students/{student_id}/licenses/{license_code}`
   * Auth: `school_admin`
   * Purpose: revoke a specific license from a student.
   * Response: 204
@@ -326,35 +326,35 @@ Responsibilities: question bank, test generation, correction, statistics.
 
 #### Endpoints
 
-* GET `/v1/permits`
+* GET `/api/v1/permits`
   * Auth: required
   * Response: `{items}` (list of licenses/permits)
 
-* GET `/v1/topics`
+* GET `/api/v1/topics`
   * Auth: required
   * Query: `permit_code` (optional)
   * Response: `{items}`
 
-* GET `/v1/questions/random`
+* GET `/api/v1/questions/random`
   * Auth: required
   * Query: `permit_code`, `topic_id` (optional), `count` (default 30)
   * Response: `{items}` (question list)
 
-* POST `/v1/tests/generate`
+* POST `/api/v1/tests/generate`
   * Auth: required
   * Request: `{permit_code, topic_id?, mode, count?}` where mode in `license|topic|random|failed`
   * Response: `{test}` with 30 questions
 
-* POST `/v1/tests/{test_id}/submit`
+* POST `/api/v1/tests/{test_id}/submit`
   * Auth: required
   * Request: `{answers[]}` where answer `{question_id, option_id}`
   * Response: `{result}` including `score`, `correct_count`, `wrong_count`, `passed`, `by_topic[]`
 
-* GET `/v1/tests/{test_id}`
+* GET `/api/v1/tests/{test_id}`
   * Auth: required
   * Response: `{test}` (test metadata and questions)
 
-* GET `/v1/stats`
+* GET `/api/v1/stats`
   * Auth: required
   * Query: `student_id` (optional, admin only), `permit_code` (optional)
   * Response: `{summary, by_topic[], history[], trend[], failed_distribution[]}`
@@ -377,26 +377,26 @@ Responsibilities: conversation management, AI integration, message persistence.
 
 #### Endpoints
 
-* POST `/v1/ai/conversations`
+* POST `/api/v1/ai/conversations`
   * Auth: required
   * Request: `{title?}`
   * Response: `{conversation}`
 
-* GET `/v1/ai/conversations`
+* GET `/api/v1/ai/conversations`
   * Auth: required
   * Query: `limit`, `offset`, `sort`
   * Response: paginated `{items, total, limit, offset}`
 
-* GET `/v1/ai/conversations/{conversation_id}`
+* GET `/api/v1/ai/conversations/{conversation_id}`
   * Auth: required
   * Response: `{conversation, messages[]}`
 
-* POST `/v1/ai/messages`
+* POST `/api/v1/ai/messages`
   * Auth: required
   * Request: `{conversation_id, content}`
   * Response: `{message, assistant_reply}`
 
-* GET `/v1/ai/messages`
+* GET `/api/v1/ai/messages`
   * Auth: required
   * Query: `conversation_id`, `limit`, `offset`
   * Response: paginated `{items, total, limit, offset}`
