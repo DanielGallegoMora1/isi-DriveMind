@@ -88,6 +88,10 @@ class SeedQuestionsIntegrationTests(unittest.TestCase):
                 cursor.execute("SELECT id FROM permits WHERE code = %s", (self.permit_code,))
                 row = cursor.fetchone()
                 if row is not None:
+                    cursor.execute("DELETE FROM question_correct_options WHERE question_id IN (SELECT id FROM questions WHERE permit_id = %s)", (row[0],))
+                    cursor.execute("DELETE FROM question_options WHERE question_id IN (SELECT id FROM questions WHERE permit_id = %s)", (row[0],))
+                    cursor.execute("DELETE FROM questions WHERE permit_id = %s", (row[0],))
+                    cursor.execute("DELETE FROM topics WHERE permit_id = %s", (row[0],))
                     cursor.execute("DELETE FROM permits WHERE id = %s", (row[0],))
 
     def test_import_is_idempotent_and_updates_existing_questions(self) -> None:
