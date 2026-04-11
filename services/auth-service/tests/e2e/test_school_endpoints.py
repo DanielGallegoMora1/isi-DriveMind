@@ -17,13 +17,13 @@ def test_create_school_as_system_admin(client, db_session):
 
     # Login to get token
     res = client.post(
-        "/v1/auth/login", json={"email": "sysadmin@example.com", "password": "pass"}
+        "/api/v1/auth/login", json={"email": "sysadmin@example.com", "password": "pass"}
     )
     token = res.json()["access_token"]
 
     # Act: create school
     res = client.post(
-        "/v1/auth/schools",
+        "/api/v1/auth/schools",
         headers={"Authorization": f"Bearer {token}"},
         json={
             "name": "E2E School",
@@ -56,12 +56,12 @@ def test_create_school_forbidden_role(client, db_session):
     db_session.commit()
 
     res = client.post(
-        "/v1/auth/login", json={"email": "stu@example.com", "password": "pass"}
+        "/api/v1/auth/login", json={"email": "stu@example.com", "password": "pass"}
     )
     token = res.json()["access_token"]
 
     res = client.post(
-        "/v1/auth/schools",
+        "/api/v1/auth/schools",
         headers={"Authorization": f"Bearer {token}"},
         json={"name": "E2E", "email": "a@a.com", "tax_id": "1", "password": "x"},
     )

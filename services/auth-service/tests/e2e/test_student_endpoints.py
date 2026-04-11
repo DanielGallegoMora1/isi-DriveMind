@@ -31,12 +31,12 @@ def test_assign_license_endpoint(client, db_session):
 
     # 3. Login school_admin
     token = client.post(
-        "/v1/auth/login", json={"email": "adm@s.com", "password": "p"}
+        "/api/v1/auth/login", json={"email": "adm@s.com", "password": "p"}
     ).json()["access_token"]
 
     # 4. Create Student via endpoint (as school_admin)
     res_student = client.post(
-        "/v1/auth/students",
+        "/api/v1/auth/students",
         headers={"Authorization": f"Bearer {token}"},
         json={
             "email": "est@s.com",
@@ -53,7 +53,7 @@ def test_assign_license_endpoint(client, db_session):
 
     # 5. Assign License via Endpoint
     res_append = client.post(
-        f"/v1/auth/students/{student_id}/licenses",
+        f"/api/v1/auth/students/{student_id}/licenses",
         headers={"Authorization": f"Bearer {token}"},
         json={"license_codes": ["A2"]},
     )

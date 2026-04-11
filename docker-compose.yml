@@ -85,9 +85,26 @@ services:
       DB_NAME: ${AI_DB_NAME:-ai_db}
       DB_USER: ${AI_DB_USER:-ai_user}
       DB_PASSWORD: ${AI_DB_PASSWORD:-ai_password}
-      HF_TOKEN: ${HF_TOKEN}
+      HF_TOKEN: ${HF_TOKEN:-}
     depends_on:
       - ai-db
+    networks:
+      - drivemind
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_AUTH_SERVICE_URL: /api
+      VITE_AUTH_PROXY_TARGET: http://auth-service:8000
+    volumes:
+      - ./frontend:/app
+      - frontend-node_modules:/app/node_modules
+    depends_on:
+      - auth-service
     networks:
       - drivemind
 
@@ -99,3 +116,4 @@ volumes:
   auth-db-data:
   core-db-data:
   ai-db-data:
+  frontend-node_modules:

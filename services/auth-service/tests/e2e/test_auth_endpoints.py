@@ -18,7 +18,7 @@ def test_login_endpoint_success(client, db_session):
 
     # Act
     response = client.post(
-        "/v1/auth/login", json={"email": "root@admin.com", "password": "rootpwd"}
+        "/api/v1/auth/login", json={"email": "root@admin.com", "password": "rootpwd"}
     )
 
     # Assert
@@ -30,7 +30,7 @@ def test_login_endpoint_success(client, db_session):
 
 def test_login_endpoint_failure(client):
     response = client.post(
-        "/v1/auth/login", json={"email": "non@existent.com", "password": "bad"}
+        "/api/v1/auth/login", json={"email": "non@existent.com", "password": "bad"}
     )
     assert response.status_code == 401
 
@@ -43,7 +43,7 @@ def test_login_endpoint_accepts_bootstrap_demo_credentials(client, db_session, m
     ensure_demo_users(db_session)
 
     response = client.post(
-        "/v1/auth/login",
+        "/api/v1/auth/login",
         json={
             "email": settings.demo_system_admin_email,
             "password": settings.demo_system_admin_password,

@@ -18,7 +18,7 @@ from app.presentation.schemas import (
     UserResponse,
 )
 
-router = APIRouter(prefix="/v1/auth/schools", tags=["schools"])
+router = APIRouter(prefix="/api/v1/auth/schools", tags=["schools"])
 
 DbDep = Annotated[Session, Depends(get_db)]
 

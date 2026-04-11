@@ -1,10 +1,14 @@
-import os
 from openai import OpenAI
 
-client = OpenAI(
-    base_url="https://router.huggingface.co/v1",
-    api_key=os.environ["HF_TOKEN"],
-)
+from app.infrastructure.config import settings
+
+client = None
+
+if settings.hf_token:
+    client = OpenAI(
+        base_url="https://router.huggingface.co/v1",
+        api_key=settings.hf_token,
+    )
 
 SYSTEM_PROMPT = """Eres DriveMind Assistant, el asistente virtual de una plataforma de preparación para exámenes teóricos de autoescuela en España.
 
@@ -29,22 +33,5 @@ Si el usuario hace referencia a algo anterior pero no hay suficiente contexto pa
 
 Si el usuario hace preguntas completamente ajenas al ámbito de la autoescuela, conducción o seguridad vial, indícale amablemente que estás especializado en ayudar con dudas relacionadas con la preparación del examen teórico y temas de conducción."""
 
-stream = client.chat.completions.create(
-    model="openai/gpt-oss-20b:groq",
-    messages=[
-        {
-            "role": "system",
-            "content": SYSTEM_PROMPT
-        },
-        {
-            "role": "user",
-            "content": "Explicame los limites de la autovía"
-        }
-    ],
-    stream=True
-)
-
-# Leer el stream chunk a chunk
-for chunk in stream:
-    if chunk.choices[0].delta.content is not None:
-        print(chunk.choices[0].delta.content, end="", flush=True)
+def has_hf_client() -> bool:
+    return client is not None
