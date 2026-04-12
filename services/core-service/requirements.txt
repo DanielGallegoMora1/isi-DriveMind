@@ -3,6 +3,7 @@ uvicorn[standard]
 sqlalchemy
 psycopg[binary]
 pydantic-settings
+pyjwt
 pytest
 httpx
 pytest-cov

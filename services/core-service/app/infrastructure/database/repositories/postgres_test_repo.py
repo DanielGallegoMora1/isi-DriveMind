@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import select
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 
 from app.domain.models import Test, TestAttempt, Question, Option
@@ -80,5 +80,39 @@ class PostgresTestRepository(TestRepository):
         self.session.add(attempt_model)
         self.session.commit()
         self.session.refresh(attempt_model)
+        attempt.id = attempt_model.id
+        return attempt
+
+    def save_attempt_with_answers(self, attempt: TestAttempt, answers: List[dict]) -> TestAttempt:
+        try:
+            attempt_model = AttemptModel(
+                test_id=attempt.test_id,
+                user_id=attempt.user_id,
+                started_at=attempt.started_at,
+                finished_at=attempt.finished_at,
+                score=attempt.score,
+                total_questions=attempt.total_questions,
+                correct_count=attempt.correct_count,
+                wrong_count=attempt.wrong_count,
+            )
+            self.session.add(attempt_model)
+            self.session.flush()
+
+            answer_models = [
+                AttemptAnswerModel(
+                    attempt_id=attempt_model.id,
+                    question_id=item["question_id"],
+                    selected_label=item["selected_label"],
+                    is_correct=item["is_correct"],
+                )
+                for item in answers
+            ]
+            self.session.add_all(answer_models)
+            self.session.commit()
+            self.session.refresh(attempt_model)
+        except Exception:
+            self.session.rollback()
+            raise
+
         attempt.id = attempt_model.id
         return attempt

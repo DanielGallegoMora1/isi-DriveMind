@@ -38,7 +38,7 @@ class Question:
 @dataclass
 class Test:
     id: int
-    user_id: int
+    user_id: str
     mode: str
     num_questions: int = 30
     permit_id: Optional[int] = None
@@ -50,7 +50,7 @@ class Test:
 class TestAttempt:
     id: int
     test_id: int
-    user_id: int
+    user_id: str
     correct_count: int
     wrong_count: int
     started_at: datetime = field(default_factory=datetime.now)

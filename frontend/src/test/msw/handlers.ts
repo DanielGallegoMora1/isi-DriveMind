@@ -46,8 +46,8 @@ const statsResponse = {
 }
 
 export const handlers = [
-  http.get('/core-api/v1/permits', () => HttpResponse.json(permitResponse)),
-  http.get('/core-api/v1/topics', () => HttpResponse.json(topicResponse)),
+  http.get('/core-api/v1/permits', () => HttpResponse.json({ items: permitResponse })),
+  http.get('/core-api/v1/topics', () => HttpResponse.json({ items: topicResponse })),
   http.post('/core-api/v1/tests/generate', () => HttpResponse.json(generatedTestResponse)),
   http.get('/core-api/v1/tests/77', () => HttpResponse.json(generatedTestResponse)),
   http.post('/core-api/v1/tests/77/submit', async ({ request }) => {

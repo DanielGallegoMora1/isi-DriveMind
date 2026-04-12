@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import List, Optional, Literal
 from datetime import datetime
 
@@ -15,11 +15,19 @@ class PermitResponse(BaseModel):
     code: str
     name: str
 
+
+class PermitListResponse(BaseModel):
+    items: List[PermitResponse]
+
 class TopicResponse(BaseModel):
     id: int
     permit_id: int
     topic_number: int
     name: str
+
+
+class TopicListResponse(BaseModel):
+    items: List[TopicResponse]
 
 # --- Questions ---
 class OptionResponse(BaseModel):
@@ -37,12 +45,35 @@ class QuestionResponse(BaseModel):
     image_description: Optional[str] = None
     options: List[OptionResponse]
 
+
+class QuestionListResponse(BaseModel):
+    items: List[QuestionResponse]
+
 # --- Tests Generate ---
 class TestGenerateRequest(BaseModel):
     permit_code: str
-    mode: Literal['RANDOM', 'TOPIC', 'PERMIT', 'FAILED']
+    mode: str
     topic_id: Optional[int] = None
     count: int = Field(default=30, ge=1, le=100)
+
+    @field_validator('mode', mode='before')
+    @classmethod
+    def normalize_mode(cls, value: str) -> str:
+        if not isinstance(value, str):
+            raise ValueError('mode must be a string')
+        normalized = value.lower()
+        mode_aliases = {
+            'license': 'PERMIT',
+            'permit': 'PERMIT',
+            'topic': 'TOPIC',
+            'random': 'RANDOM',
+            'failed': 'FAILED',
+        }
+
+        mapped = mode_aliases.get(normalized)
+        if mapped is None:
+            raise ValueError('mode must be one of: license, topic, random, failed')
+        return mapped
 
     @model_validator(mode='after')
     def check_topic_id(self):
@@ -52,7 +83,7 @@ class TestGenerateRequest(BaseModel):
 
 class TestResponse(BaseModel):
     id: int
-    user_id: int
+    user_id: str
     mode: str
     permit_id: Optional[int] = None
     topic_id: Optional[int] = None
@@ -69,9 +100,9 @@ class TestSubmitRequest(BaseModel):
     answers: List[AnswerItem]
     
     @model_validator(mode='after')
-    def check_answers_count(self):
-        if len(self.answers) != 30:
-            raise ValueError('Exactly 30 answers must be submitted')
+    def check_answers_not_empty(self):
+        if len(self.answers) == 0:
+            raise ValueError('At least one answer must be submitted')
         return self
 
 class TopicStat(BaseModel):
@@ -86,7 +117,7 @@ class TestResultResponse(BaseModel):
     wrong_count: int
     passed: bool
     score: Optional[int] = None
-    by_topic: List[TopicStat] = []
+    by_topic: List[TopicStat] = Field(default_factory=list)
 
 # --- Stats Summary ---
 class StatsSummary(BaseModel):
@@ -115,9 +146,24 @@ class FailedDistributionItem(BaseModel):
     topic_id: int
     wrong_count: int
 
+
+class ProblemValidationError(BaseModel):
+    field: str
+    message: str
+
+
+class ProblemDetail(BaseModel):
+    type: str
+    title: str
+    status: int
+    detail: str
+    instance: str
+    errors: List[ProblemValidationError] = Field(default_factory=list)
+
+
 class StatsResponse(BaseModel):
     summary: StatsSummary
-    by_topic: List[TopicStat] = []
-    history: List[StatsHistoryItem] = []
-    trend: List[StatsTrendItem] = []
-    failed_distribution: List[FailedDistributionItem] = []
+    by_topic: List[TopicStat] = Field(default_factory=list)
+    history: List[StatsHistoryItem] = Field(default_factory=list)
+    trend: List[StatsTrendItem] = Field(default_factory=list)
+    failed_distribution: List[FailedDistributionItem] = Field(default_factory=list)

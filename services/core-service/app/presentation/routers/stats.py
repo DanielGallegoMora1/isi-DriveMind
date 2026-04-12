@@ -1,22 +1,42 @@
-from fastapi import APIRouter, Depends
-from typing import Optional
-from app.presentation.schemas import StatsResponse, StatsSummary
-from app.presentation.dependencies import get_current_user_id
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, Query
+
+from app.application.manager_use_cases import TestManager
+from app.presentation.dependencies import get_current_payload, get_test_manager
+from app.presentation.errors import forbidden_problem, not_found_problem
+from app.presentation.schemas import StatsResponse
 
 router = APIRouter(prefix="/stats", tags=["Stats"])
 
+CurrentPayloadDep = Annotated[dict, Depends(get_current_payload)]
+TestManagerDep = Annotated[TestManager, Depends(get_test_manager)]
+
 @router.get("", response_model=StatsResponse)
 def get_stats(
-    permit_code: Optional[str] = None,
-    student_id: Optional[int] = None,
-    current_user_id: int = Depends(get_current_user_id)
+    payload: CurrentPayloadDep,
+    manager: TestManagerDep,
+    permit_code: Annotated[str | None, Query()] = None,
+    student_id: Annotated[str | None, Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ):
-    # Dummy mock response since stat generation isn't requested in depth yet
-    return StatsResponse(
-        summary=StatsSummary(
-            total_tests=10,
-            passed_tests=8,
-            failed_tests=2,
-            accuracy_pct=80.5
+    current_user_id = str(payload["sub"])
+    target_user_id = current_user_id
+
+    if student_id is not None:
+        if student_id != current_user_id and payload.get("role") not in {"school_admin", "system_admin"}:
+            raise forbidden_problem("forbidden")
+        target_user_id = student_id
+
+    try:
+        return manager.get_stats(
+            user_id=target_user_id,
+            permit_code=permit_code,
+            limit=limit,
+            offset=offset,
         )
-    )
+    except ValueError as exc:
+        if str(exc) == "permit_not_found":
+            raise not_found_problem("permit_not_found") from exc
+        raise

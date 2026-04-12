@@ -4,20 +4,24 @@ import type { GenerateTestInput, GeneratedTest, Permit, SubmitAnswer, TestResult
 
 const coreBaseUrl = `${env.coreServiceUrl}/v1`
 
+type ItemsResponse<T> = {
+  items: T[]
+}
+
 export function getPermits(token: string) {
-  return requestJson<Permit[]>(`${coreBaseUrl}/permits`, {
+  return requestJson<ItemsResponse<Permit>>(`${coreBaseUrl}/permits`, {
     method: 'GET',
     token,
-  })
+  }).then((response) => response.items)
 }
 
 export function getTopics(token: string, permitCode: string) {
   const searchParams = new URLSearchParams({ permit_code: permitCode })
 
-  return requestJson<Topic[]>(`${coreBaseUrl}/topics?${searchParams.toString()}`, {
+  return requestJson<ItemsResponse<Topic>>(`${coreBaseUrl}/topics?${searchParams.toString()}`, {
     method: 'GET',
     token,
-  })
+  }).then((response) => response.items)
 }
 
 export function generateTest(token: string, input: GenerateTestInput) {

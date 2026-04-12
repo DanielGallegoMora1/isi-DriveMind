@@ -1,15 +1,16 @@
 import pytest
-from datetime import datetime
 from typing import List, Dict, Optional
+from datetime import datetime
 
 from app.application.manager_use_cases import TestManager
 from app.domain.models import Question, Test, TestAttempt, Permit, Topic, Option
-from app.domain.ports import QuestionRepository, TestRepository
+from app.domain.ports import QuestionRepository, TestRepository, StatsRepository
 from app.presentation.schemas import TestGenerateRequest, TestSubmitRequest, AnswerItem
 
 class FakeQuestionRepository(QuestionRepository):
     def __init__(self):
         self.questions = []
+        self.last_get_questions_kwargs: dict = {}
         for i in range(1, 31):
             opts = [Option(id=1, question_id=i, label='a', text='A'),
                     Option(id=2, question_id=i, label='b', text='B'),
@@ -21,9 +22,28 @@ class FakeQuestionRepository(QuestionRepository):
         return [Permit(id=1, code="B", name="B")]
 
     def get_topics(self, permit_id: Optional[int] = None) -> List[Topic]:
-        return [Topic(id=1, permit_id=1, number=1, name="Init")]
+        return [Topic(id=1, permit_id=1, topic_number=1, name="Init")]
 
-    def get_questions(self, mode: str, count: int = 30, permit_id: Optional[int] = None, topic_id: Optional[int] = None) -> List[Question]:
+    def get_permit_by_code(self, permit_code: str) -> Optional[Permit]:
+        if permit_code == "B":
+            return Permit(id=1, code="B", name="B")
+        return None
+
+    def get_questions(
+        self,
+        mode: str,
+        count: int = 30,
+        permit_id: Optional[int] = None,
+        topic_id: Optional[int] = None,
+        user_id: Optional[str] = None,
+    ) -> List[Question]:
+        self.last_get_questions_kwargs = {
+            "mode": mode,
+            "count": count,
+            "permit_id": permit_id,
+            "topic_id": topic_id,
+            "user_id": user_id,
+        }
         return self.questions[:count]
 
     def get_correct_answers(self, question_ids: List[int]) -> Dict[int, str]:
@@ -34,6 +54,7 @@ class FakeTestRepository(TestRepository):
     def __init__(self):
         self.tests: Dict[int, Test] = {}
         self.attempts: Dict[int, TestAttempt] = {}
+        self.saved_attempt_answers: List[dict] = []
         self._test_seq = 1
         self._attempt_seq = 1
 
@@ -52,18 +73,88 @@ class FakeTestRepository(TestRepository):
         self.attempts[attempt.id] = attempt
         return attempt
 
+    def save_attempt_with_answers(self, attempt: TestAttempt, answers: List[dict]) -> TestAttempt:
+        saved = self.save_attempt(attempt)
+        self.saved_attempt_answers = answers
+        return saved
+
+
+class FakeStatsRepository(StatsRepository):
+    def __init__(self) -> None:
+        self.last_kwargs: dict = {}
+
+    def get_summary(self, *, user_id: str, permit_id: Optional[int] = None) -> dict:
+        self.last_kwargs["summary"] = {"user_id": user_id, "permit_id": permit_id}
+        return {
+            "total_tests": 2,
+            "passed_tests": 1,
+            "failed_tests": 1,
+            "accuracy_pct": 66.67,
+        }
+
+    def get_by_topic(self, *, user_id: str, permit_id: Optional[int] = None) -> List[dict]:
+        self.last_kwargs["by_topic"] = {"user_id": user_id, "permit_id": permit_id}
+        return [
+            {"topic_id": 1, "correct": 3, "wrong": 2, "accuracy_pct": 60.0},
+        ]
+
+    def get_history(
+        self,
+        *,
+        user_id: str,
+        permit_id: Optional[int] = None,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> List[dict]:
+        self.last_kwargs["history"] = {
+            "user_id": user_id,
+            "permit_id": permit_id,
+            "limit": limit,
+            "offset": offset,
+        }
+        return [
+            {
+                "test_id": 10,
+                "created_at": datetime(2026, 1, 1),
+                "passed": True,
+                "score": 90,
+                "correct_count": 27,
+                "wrong_count": 3,
+                "accuracy_pct": 90.0,
+                "permit_code": "B",
+                "topic_id": None,
+            }
+        ]
+
+    def get_trend(self, *, user_id: str, permit_id: Optional[int] = None) -> List[dict]:
+        self.last_kwargs["trend"] = {"user_id": user_id, "permit_id": permit_id}
+        return [{"period": "2026-01", "tests": 2, "accuracy_pct": 66.67}]
+
+    def get_failed_distribution(self, *, user_id: str, permit_id: Optional[int] = None) -> List[dict]:
+        self.last_kwargs["failed_distribution"] = {"user_id": user_id, "permit_id": permit_id}
+        return [{"topic_id": 1, "wrong_count": 2}]
+
 
 @pytest.fixture
 def test_manager():
     return TestManager(question_repo=FakeQuestionRepository(), test_repo=FakeTestRepository())
 
 
+@pytest.fixture
+def test_manager_with_stats():
+    return TestManager(
+        question_repo=FakeQuestionRepository(),
+        test_repo=FakeTestRepository(),
+        stats_repo=FakeStatsRepository(),
+    )
+
+
 def test_generate_test(test_manager: TestManager):
     request = TestGenerateRequest(permit_code="B", mode="RANDOM", count=30)
-    test = test_manager.generate_test(user_id=10, request=request)
+    test = test_manager.generate_test(user_id="10", request=request)
     
     assert test.id == 1
-    assert test.user_id == 10
+    assert test.user_id == "10"
     assert test.mode == "RANDOM"
     assert test.num_questions == 30
     assert len(test.questions) == 30
@@ -73,13 +164,13 @@ def test_generate_test(test_manager: TestManager):
 def test_submit_test_passed(test_manager: TestManager):
     # Generar un test primero para guardarlo
     request = TestGenerateRequest(permit_code="B", mode="RANDOM", count=30)
-    test = test_manager.generate_test(user_id=10, request=request)
+    test = test_manager.generate_test(user_id="10", request=request)
     
     # Fake repo ensures all correct answers are 'a'
     answers = [AnswerItem(question_id=i, selected_label='a') for i in range(1, 31)]
     submit_req = TestSubmitRequest(answers=answers)
     
-    result = test_manager.submit_test(user_id=10, test_id=test.id, request=submit_req)
+    result = test_manager.submit_test(user_id="10", test_id=test.id, request=submit_req)
     
     assert result.passed is True
     assert result.correct_count == 30
@@ -89,7 +180,7 @@ def test_submit_test_passed(test_manager: TestManager):
 
 def test_submit_test_failed(test_manager: TestManager):
     request = TestGenerateRequest(permit_code="B", mode="RANDOM", count=30)
-    test = test_manager.generate_test(user_id=10, request=request)
+    test = test_manager.generate_test(user_id="10", request=request)
     
     # Fallamos 5 preguntas (max 3 para aprobar), contestamos todo con 'b' menos las primeras 25
     answers = [AnswerItem(question_id=i, selected_label='a') for i in range(1, 26)]
@@ -97,8 +188,111 @@ def test_submit_test_failed(test_manager: TestManager):
     
     submit_req = TestSubmitRequest(answers=answers)
     
-    result = test_manager.submit_test(user_id=10, test_id=test.id, request=submit_req)
+    result = test_manager.submit_test(user_id="10", test_id=test.id, request=submit_req)
     
     assert result.passed is False
     assert result.correct_count == 25
     assert result.wrong_count == 5
+
+
+def test_generate_failed_mode_uses_request_count_and_mode(test_manager: TestManager):
+    request = TestGenerateRequest(permit_code="B", mode="FAILED", count=12)
+
+    generated = test_manager.generate_test(user_id="99", request=request)
+
+    assert generated.mode == "FAILED"
+    assert generated.num_questions == 12
+    assert len(generated.questions) == 12
+
+    question_repo = test_manager.question_repo
+    assert question_repo.last_get_questions_kwargs["mode"] == "FAILED"
+    assert question_repo.last_get_questions_kwargs["count"] == 12
+    assert question_repo.last_get_questions_kwargs["user_id"] == "99"
+
+
+def test_submit_test_computes_by_topic_and_persists_answer_rows(test_manager: TestManager):
+    request = TestGenerateRequest(permit_code="B", mode="RANDOM", count=30)
+    test = test_manager.generate_test(user_id="10", request=request)
+
+    # Move last 10 questions to topic 2 so by_topic can be asserted
+    for idx, question in enumerate(test.questions, start=1):
+        if idx > 20:
+            question.topic_id = 2
+
+    # first 15 correct + next 5 wrong on topic 1, then 8 correct + 2 wrong on topic 2
+    answers = []
+    for idx, q in enumerate(test.questions, start=1):
+        if idx <= 15:
+            selected = "a"
+        elif idx <= 20:
+            selected = "b"
+        elif idx <= 28:
+            selected = "a"
+        else:
+            selected = "b"
+        answers.append(AnswerItem(question_id=q.id, selected_label=selected))
+
+    submit_req = TestSubmitRequest(answers=answers)
+
+    result = test_manager.submit_test(user_id="10", test_id=test.id, request=submit_req)
+
+    assert result.correct_count == 23
+    assert result.wrong_count == 7
+    assert result.passed is False
+    assert result.score == 77
+    assert len(result.by_topic) == 2
+
+    topic_1 = next(item for item in result.by_topic if item.topic_id == 1)
+    topic_2 = next(item for item in result.by_topic if item.topic_id == 2)
+    assert topic_1.correct == 15
+    assert topic_1.wrong == 5
+    assert topic_1.accuracy_pct == 75.0
+    assert topic_2.correct == 8
+    assert topic_2.wrong == 2
+    assert topic_2.accuracy_pct == 80.0
+
+    test_repo = test_manager.test_repo
+    assert len(test_repo.saved_attempt_answers) == 30
+    assert test_repo.saved_attempt_answers[0]["question_id"] == test.questions[0].id
+    assert "is_correct" in test_repo.saved_attempt_answers[0]
+
+
+def test_submit_test_rejects_duplicate_question_answers(test_manager: TestManager):
+    request = TestGenerateRequest(permit_code="B", mode="RANDOM", count=30)
+    test = test_manager.generate_test(user_id="10", request=request)
+
+    answers = [AnswerItem(question_id=i, selected_label="a") for i in range(1, 30)]
+    answers.append(AnswerItem(question_id=1, selected_label="a"))
+
+    with pytest.raises(ValueError, match="duplicate_answers"):
+        test_manager.submit_test(user_id="10", test_id=test.id, request=TestSubmitRequest(answers=answers))
+
+
+def test_submit_test_rejects_answers_for_question_not_in_test(test_manager: TestManager):
+    request = TestGenerateRequest(permit_code="B", mode="RANDOM", count=30)
+    test = test_manager.generate_test(user_id="10", request=request)
+
+    answers = [AnswerItem(question_id=i, selected_label="a") for i in range(1, 30)]
+    answers.append(AnswerItem(question_id=999, selected_label="a"))
+
+    with pytest.raises(ValueError, match="answers_not_in_test"):
+        test_manager.submit_test(user_id="10", test_id=test.id, request=TestSubmitRequest(answers=answers))
+
+
+def test_get_stats_assembles_all_sections_and_resolves_permit(test_manager_with_stats: TestManager):
+    stats = test_manager_with_stats.get_stats(user_id="42", permit_code="B", limit=5, offset=10)
+
+    assert stats.summary.total_tests == 2
+    assert len(stats.by_topic) == 1
+    assert len(stats.history) == 1
+    assert len(stats.trend) == 1
+    assert len(stats.failed_distribution) == 1
+
+    stats_repo = test_manager_with_stats.stats_repo
+    assert stats_repo.last_kwargs["summary"] == {"user_id": "42", "permit_id": 1}
+    assert stats_repo.last_kwargs["history"] == {"user_id": "42", "permit_id": 1, "limit": 5, "offset": 10}
+
+
+def test_get_stats_raises_when_permit_code_not_found(test_manager_with_stats: TestManager):
+    with pytest.raises(ValueError, match="permit_not_found"):
+        test_manager_with_stats.get_stats(user_id="42", permit_code="ZZ")

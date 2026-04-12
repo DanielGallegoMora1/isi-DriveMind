@@ -1,20 +1,35 @@
+from typing import Optional, Annotated
+
 from fastapi import APIRouter, Depends
-from typing import List, Optional
-from app.presentation.schemas import PermitResponse, TopicResponse
+
+from app.presentation.schemas import PermitListResponse, TopicListResponse
 from app.domain.ports import QuestionRepository
-from app.presentation.dependencies import get_question_repo
+from app.presentation.dependencies import get_question_repo, get_current_user_id
+from app.presentation.errors import not_found_problem
 
 router = APIRouter(tags=["Catalog"])
 
-@router.get("/permits", response_model=List[PermitResponse])
-def get_permits(repo: QuestionRepository = Depends(get_question_repo)):
-    return repo.get_permits()
+CurrentUserIdDep = Annotated[int, Depends(get_current_user_id)]
 
-@router.get("/topics", response_model=List[TopicResponse])
-def get_topics(
-    permit_code: Optional[str] = None, 
-    repo: QuestionRepository = Depends(get_question_repo)
+
+@router.get("/permits", response_model=PermitListResponse)
+def get_permits(
+    _: CurrentUserIdDep,
+    repo: QuestionRepository = Depends(get_question_repo),
 ):
-    # Depending on code logic, we might need a mapping permit_code -> permit_id here
-    # Assuming code maps correctly or we change DB to use code string for topics.
-    return repo.get_topics(permit_id=1 if permit_code else None)
+    return {"items": repo.get_permits()}
+
+
+@router.get("/topics", response_model=TopicListResponse)
+def get_topics(
+    _: CurrentUserIdDep,
+    permit_code: Optional[str] = None,
+    repo: QuestionRepository = Depends(get_question_repo),
+):
+    permit_id: int | None = None
+    if permit_code:
+        permit = repo.get_permit_by_code(permit_code)
+        if permit is None:
+            raise not_found_problem("permit_not_found")
+        permit_id = permit.id
+    return {"items": repo.get_topics(permit_id=permit_id)}

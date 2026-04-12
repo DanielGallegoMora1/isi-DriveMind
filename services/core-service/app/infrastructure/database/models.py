@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import List, Optional
-from sqlalchemy import String, Text, ForeignKey, Integer, Boolean, DateTime, SmallInteger, CheckConstraint
+from sqlalchemy import String, Text, ForeignKey, Integer, Boolean, DateTime, SmallInteger, CheckConstraint, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase, relationship
 
 class Base(DeclarativeBase):
@@ -25,6 +25,7 @@ class TopicModel(Base):
 
     permit: Mapped["PermitModel"] = relationship(back_populates="topics")
     questions: Mapped[List["QuestionModel"]] = relationship(back_populates="topic")
+    tests: Mapped[List["TestModel"]] = relationship(back_populates="topic")
 
 class QuestionModel(Base):
     __tablename__ = "questions"
@@ -43,6 +44,7 @@ class QuestionModel(Base):
     topic: Mapped["TopicModel"] = relationship(back_populates="questions")
     options: Mapped[List["OptionModel"]] = relationship(back_populates="question", cascade="all, delete-orphan")
     correct_option: Mapped["CorrectOptionModel"] = relationship(back_populates="question", uselist=False, cascade="all, delete-orphan")
+    attempt_answers: Mapped[List["AttemptAnswerModel"]] = relationship(back_populates="question")
 
 class OptionModel(Base):
     __tablename__ = "question_options"
@@ -63,7 +65,7 @@ class CorrectOptionModel(Base):
 class TestModel(Base):
     __tablename__ = "tests"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    user_id: Mapped[str] = mapped_column(String(64), nullable=False)
     mode: Mapped[str] = mapped_column(Text, nullable=False)
     permit_id: Mapped[Optional[int]] = mapped_column(ForeignKey("permits.id", ondelete="RESTRICT"), nullable=True)
     topic_id: Mapped[Optional[int]] = mapped_column(ForeignKey("topics.id", ondelete="RESTRICT"), nullable=True)
@@ -71,6 +73,7 @@ class TestModel(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
     permit: Mapped["PermitModel"] = relationship(back_populates="tests")
+    topic: Mapped[Optional["TopicModel"]] = relationship(back_populates="tests")
     test_questions: Mapped[List["TestQuestionModel"]] = relationship(back_populates="test", cascade="all, delete-orphan")
     attempts: Mapped[List["AttemptModel"]] = relationship(back_populates="test", cascade="all, delete-orphan")
 
@@ -85,7 +88,7 @@ class AttemptModel(Base):
     __tablename__ = "test_attempts"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     test_id: Mapped[int] = mapped_column(ForeignKey("tests.id", ondelete="CASCADE"), nullable=False)
-    user_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    user_id: Mapped[str] = mapped_column(String(64), nullable=False)
     started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
     finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     score: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
@@ -98,6 +101,9 @@ class AttemptModel(Base):
 
 class AttemptAnswerModel(Base):
     __tablename__ = "attempt_answers"
+    __table_args__ = (
+        UniqueConstraint("attempt_id", "question_id", name="uq_attempt_answers_attempt_question"),
+    )
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     attempt_id: Mapped[int] = mapped_column(ForeignKey("test_attempts.id", ondelete="CASCADE"), nullable=False)
     question_id: Mapped[int] = mapped_column(ForeignKey("questions.id", ondelete="RESTRICT"), nullable=False)
@@ -106,3 +112,4 @@ class AttemptAnswerModel(Base):
     answered_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
     attempt: Mapped["AttemptModel"] = relationship(back_populates="answers")
+    question: Mapped["QuestionModel"] = relationship(back_populates="attempt_answers")

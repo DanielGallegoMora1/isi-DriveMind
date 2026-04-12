@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
@@ -6,11 +7,18 @@ from app.infrastructure.database.session import get_db, engine
 from app.infrastructure.database.models import Base
 
 from app.presentation.routers import catalog, tests, stats
+from app.presentation.errors import (
+    ProblemException,
+    problem_exception_handler,
+    validation_exception_handler,
+)
 
 # Create tables if they don't exist
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="DriveMind Core Service", version="1.0.0")
+app.add_exception_handler(ProblemException, problem_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
 
 app.add_middleware(
     CORSMiddleware,

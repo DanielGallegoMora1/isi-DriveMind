@@ -7,6 +7,8 @@ class Settings(BaseSettings):
     db_name: str = "drivemind"
     db_user: str = "postgres"
     db_password: str = "postgres"
+    secret_key: str = "drivemind-super-secret-change-in-prod"
+    algorithm: str = "HS256"
 
     @property
     def database_url(self) -> str:
