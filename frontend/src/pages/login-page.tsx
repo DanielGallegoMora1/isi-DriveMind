@@ -62,12 +62,12 @@ export function LoginPage() {
           </p>
 
           <h1 className="m-0 max-w-[11ch] text-[clamp(3rem,6vw,5rem)] leading-[0.96] text-white max-[640px]:max-w-none max-[640px]:text-[clamp(2.4rem,11vw,3.3rem)]">
-            Tu camino hacia el carnet de conducir{' '}
+            Tu camino hacia el carné de conducir{' '}
             <span className="text-[#4ade80]">empieza aquí</span>
           </h1>
 
           <p className="m-0 max-w-[54ch] text-[1.02rem] text-[#d1d5db]">
-            Practica con tests reales, seguí tu progreso y preparate con una
+            Practica con tests reales, sigue tu progreso y prepárate con una
             experiencia clara, moderna y enfocada en aprobar.
           </p>
 
@@ -177,12 +177,12 @@ export function LoginPage() {
           </form>
 
           <div className="mt-5 flex flex-wrap items-center justify-center gap-1.5 text-center text-[#6b7280]">
-            <span>¿No tenés cuenta?</span>
+            <span>¿No tienes cuenta?</span>
             <button
               type="button"
               className="border-0 bg-transparent p-0 font-semibold text-blue-500 hover:text-blue-700 transition-colors"
             >
-              Registrate aquí
+              Regístrate aquí
             </button>
           </div>
 

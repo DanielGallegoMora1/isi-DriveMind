@@ -1,39 +1,43 @@
+import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { TestsPage } from './tests-page'
 import { renderWithProviders } from '../test/utils'
 
 describe('TestsPage', () => {
-  it('permite generar un test, responderlo y ver el resultado corregido', async () => {
+  it('renderiza el flujo real de selección de test desde la ruta de tests', () => {
+    renderWithProviders(<TestsPage />)
+
+    expect(screen.getByRole('button', { name: /volver al dashboard/i })).toBeInTheDocument()
+    expect(screen.getByText('Selecciona el permiso')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /comenzar permiso b - turismos/i })).toBeInTheDocument()
+  })
+
+  it('permite generar, responder y enviar un test real contra la api mockeada', async () => {
     const user = userEvent.setup()
 
-    const { container } = renderWithProviders(<TestsPage />)
+    renderWithProviders(<TestsPage />)
 
-    await screen.findByRole('option', { name: 'B · Turismos' })
+    await user.click(screen.getByRole('button', { name: /comenzar permiso b - turismos/i }))
+    await user.click(screen.getByRole('button', { name: /test aleatorio/i }))
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Generar test' })).toBeEnabled()
-    })
+    expect(await screen.findByText('Mapa de preguntas')).toBeInTheDocument()
+    expect(screen.getByText((_, node) => node?.textContent === 'Pregunta 1 de 30')).toBeInTheDocument()
+    expect(screen.getByText('0/30 respondidas')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Generar test' }))
+    for (let questionNumber = 1; questionNumber <= 30; questionNumber += 1) {
+      await user.click(screen.getByRole('button', { name: new RegExp(`B Opción B ${questionNumber}`, 'i') }))
 
-    expect(await screen.findAllByText('Pregunta 1')).toHaveLength(2)
-    expect(screen.getAllByText('Pregunta 30')).toHaveLength(2)
-
-    for (let index = 1; index <= 30; index += 1) {
-      const optionIndex = index <= 3 ? 0 : 1
-      const questionOptions = container.querySelectorAll<HTMLInputElement>(`input[name="question-${index}"]`)
-      fireEvent.click(questionOptions[optionIndex])
+      if (questionNumber < 30) {
+        await user.click(screen.getByRole('button', { name: /siguiente/i }))
+      }
     }
 
-    await user.click(screen.getByRole('button', { name: 'Enviar respuestas' }))
+    expect(screen.getByText('30/30 respondidas')).toBeInTheDocument()
 
-    expect(await screen.findAllByText('Aprobado')).toHaveLength(2)
-    expect(screen.getByText('Score')).toBeInTheDocument()
-    expect(screen.getByText('90')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /finalizar test/i }))
 
-    await waitFor(() => {
-      expect(screen.getByText(/27 correctas · 3 incorrectas/i)).toBeInTheDocument()
-    })
-  }, 10000)
+    expect(await screen.findByRole('heading', { name: 'Aprobado' })).toBeInTheDocument()
+    expect(screen.getByText('Desglose por tema')).toBeInTheDocument()
+    expect(screen.getByText(/30 correctas · 0 incorrectas/i)).toBeInTheDocument()
+  })
 })

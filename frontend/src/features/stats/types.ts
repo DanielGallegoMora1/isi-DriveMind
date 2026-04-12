@@ -1,8 +1,8 @@
 export type StatsSummary = {
   total_tests: number
-  passed_tests: number
-  failed_tests: number
+  pass_rate_pct: number
   accuracy_pct: number
+  current_streak_days: number
 }
 
 export type StatsByTopic = {
@@ -13,7 +13,7 @@ export type StatsByTopic = {
 }
 
 export type StatsHistoryItem = {
-  test_id: number
+  test_id: number | string
   created_at: string
   passed: boolean
   score: number | null
@@ -21,7 +21,7 @@ export type StatsHistoryItem = {
   wrong_count: number
   accuracy_pct: number
   permit_code: string | null
-  topic_id: number | null
+  topic_id: number | string | null
 }
 
 export type StatsTrendItem = {
@@ -35,10 +35,17 @@ export type FailedDistributionItem = {
   wrong_count: number
 }
 
+export type StatsGoal = {
+  progress_pct: number
+  target_accuracy_pct: number
+  current_accuracy_pct: number
+}
+
 export type StatsResponse = {
   summary: StatsSummary
-  by_topic: StatsByTopic[]
   history: StatsHistoryItem[]
-  trend: StatsTrendItem[]
-  failed_distribution: FailedDistributionItem[]
+  goal: StatsGoal
+  by_topic?: StatsByTopic[]
+  trend?: StatsTrendItem[]
+  failed_distribution?: FailedDistributionItem[]
 }

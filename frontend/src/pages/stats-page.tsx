@@ -1,24 +1,5 @@
-import { SectionPage } from '../components/section-page'
-import { useAuth } from '../features/auth'
-import { StatsOverview } from '../features/stats'
+import { EmptyState } from '../components/ui/empty-state'
 
 export function StatsPage() {
-  const { accessToken } = useAuth()
-
-  return (
-    <div className="grid gap-6">
-      <SectionPage
-        eyebrow="Estadísticas"
-        title="Tu progreso"
-        description="Resumen básico conectado al core-service real, con estados vacíos honestos para las métricas todavía no implementadas en backend."
-        highlights={[
-          { label: 'Fuente', value: 'core-service' },
-          { label: 'Summary', value: 'Disponible' },
-          { label: 'Detalle avanzado', value: 'En evolución' },
-        ]}
-      />
-
-      <StatsOverview accessToken={accessToken} />
-    </div>
-  )
+  return <EmptyState description="Esta sección estará disponible más adelante." title="Próximamente" />
 }

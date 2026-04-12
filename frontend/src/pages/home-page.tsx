@@ -1,19 +1,16 @@
-import { SectionPage } from '../components/section-page'
-import { useAuth } from '../features/auth/auth-context'
+import { useState } from 'react'
+import { useAuth } from '../features/auth'
+import { DashboardTestFlow, StatsOverview } from '../features/stats'
+
+type HomeView = 'dashboard' | 'test-flow'
 
 export function HomePage() {
-  const { user } = useAuth()
+  const { accessToken, user } = useAuth()
+  const [view, setView] = useState<HomeView>('dashboard')
 
-  return (
-    <SectionPage
-      eyebrow="Inicio"
-      title="Dashboard"
-      description={`Bienvenido, ${user?.full_name ?? 'estudiante'}. Desde aquí accedés al resumen de tu actividad en DriveMind.`}
-      highlights={[
-        { label: 'Rol activo', value: user?.role ?? 'guest' },
-        { label: 'Auth source', value: 'auth-service' },
-        { label: 'Estado', value: 'Conectado' },
-      ]}
-    />
-  )
+  if (view === 'test-flow') {
+    return <DashboardTestFlow accessToken={accessToken} onBackToDashboard={() => setView('dashboard')} />
+  }
+
+  return <StatsOverview accessToken={accessToken} user={user} onStartTest={() => setView('test-flow')} />
 }

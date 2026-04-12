@@ -90,6 +90,7 @@ class FakeStatsRepository(StatsRepository):
             "passed_tests": 1,
             "failed_tests": 1,
             "accuracy_pct": 66.67,
+            "pass_rate_pct": 50.0,
         }
 
     def get_by_topic(self, *, user_id: str, permit_id: Optional[int] = None) -> List[dict]:
@@ -133,6 +134,15 @@ class FakeStatsRepository(StatsRepository):
     def get_failed_distribution(self, *, user_id: str, permit_id: Optional[int] = None) -> List[dict]:
         self.last_kwargs["failed_distribution"] = {"user_id": user_id, "permit_id": permit_id}
         return [{"topic_id": 1, "wrong_count": 2}]
+
+    def get_activity_dates(self, *, user_id: str, permit_id: Optional[int] = None) -> List[datetime.date]:
+        self.last_kwargs["activity_dates"] = {"user_id": user_id, "permit_id": permit_id}
+        return [
+            datetime(2026, 1, 12).date(),
+            datetime(2026, 1, 11).date(),
+            datetime(2026, 1, 10).date(),
+            datetime(2026, 1, 8).date(),
+        ]
 
 
 @pytest.fixture
@@ -283,6 +293,11 @@ def test_get_stats_assembles_all_sections_and_resolves_permit(test_manager_with_
     stats = test_manager_with_stats.get_stats(user_id="42", permit_code="B", limit=5, offset=10)
 
     assert stats.summary.total_tests == 2
+    assert stats.summary.pass_rate_pct == 50.0
+    assert stats.summary.current_streak_days == 3
+    assert stats.goal.target_accuracy_pct == 90.0
+    assert stats.goal.current_accuracy_pct == 66.67
+    assert stats.goal.progress_pct == 74.08
     assert len(stats.by_topic) == 1
     assert len(stats.history) == 1
     assert len(stats.trend) == 1
@@ -291,6 +306,53 @@ def test_get_stats_assembles_all_sections_and_resolves_permit(test_manager_with_
     stats_repo = test_manager_with_stats.stats_repo
     assert stats_repo.last_kwargs["summary"] == {"user_id": "42", "permit_id": 1}
     assert stats_repo.last_kwargs["history"] == {"user_id": "42", "permit_id": 1, "limit": 5, "offset": 10}
+    assert stats_repo.last_kwargs["activity_dates"] == {"user_id": "42", "permit_id": 1}
+
+
+def test_get_stats_caps_goal_progress_and_handles_empty_accuracy(test_manager_with_stats: TestManager):
+    stats_repo = test_manager_with_stats.stats_repo
+
+    def zero_summary(*, user_id: str, permit_id: Optional[int] = None) -> dict:
+        return {
+            "total_tests": 0,
+            "passed_tests": 0,
+            "failed_tests": 0,
+            "accuracy_pct": 0.0,
+            "pass_rate_pct": 0.0,
+        }
+
+    def no_activity(*, user_id: str, permit_id: Optional[int] = None) -> List[datetime.date]:
+        return []
+
+    stats_repo.get_summary = zero_summary
+    stats_repo.get_activity_dates = no_activity
+
+    stats = test_manager_with_stats.get_stats(user_id="42")
+
+    assert stats.summary.pass_rate_pct == 0.0
+    assert stats.summary.current_streak_days == 0
+    assert stats.goal.current_accuracy_pct == 0.0
+    assert stats.goal.progress_pct == 0.0
+
+
+def test_get_stats_caps_goal_progress_at_one_hundred(test_manager_with_stats: TestManager):
+    stats_repo = test_manager_with_stats.stats_repo
+
+    def high_accuracy_summary(*, user_id: str, permit_id: Optional[int] = None) -> dict:
+        return {
+            "total_tests": 4,
+            "passed_tests": 4,
+            "failed_tests": 0,
+            "accuracy_pct": 96.0,
+            "pass_rate_pct": 100.0,
+        }
+
+    stats_repo.get_summary = high_accuracy_summary
+
+    stats = test_manager_with_stats.get_stats(user_id="42")
+
+    assert stats.goal.current_accuracy_pct == 96.0
+    assert stats.goal.progress_pct == 100.0
 
 
 def test_get_stats_raises_when_permit_code_not_found(test_manager_with_stats: TestManager):

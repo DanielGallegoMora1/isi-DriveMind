@@ -304,6 +304,15 @@ def test_stats_returns_real_sections_for_student():
     payload = response.json()
 
     assert payload["summary"]["total_tests"] >= 1
+    assert "pass_rate_pct" in payload["summary"]
+    assert "current_streak_days" in payload["summary"]
+    assert payload["summary"]["pass_rate_pct"] == 0.0
+    assert payload["summary"]["current_streak_days"] >= 1
+    assert payload["goal"] == {
+        "target_accuracy_pct": 90.0,
+        "current_accuracy_pct": 86.67,
+        "progress_pct": 96.3,
+    }
     assert isinstance(payload["by_topic"], list)
     assert isinstance(payload["history"], list)
     assert isinstance(payload["trend"], list)

@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from datetime import date
 from typing import List, Optional, Dict
 from app.domain.models import Question, Test, TestAttempt, Permit, Topic
 
@@ -74,4 +75,8 @@ class StatsRepository(ABC):
 
     @abstractmethod
     def get_failed_distribution(self, *, user_id: str, permit_id: Optional[int] = None) -> List[Dict]:
+        pass
+
+    @abstractmethod
+    def get_activity_dates(self, *, user_id: str, permit_id: Optional[int] = None) -> List[date]:
         pass

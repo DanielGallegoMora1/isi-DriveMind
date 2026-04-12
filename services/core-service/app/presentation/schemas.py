@@ -125,6 +125,14 @@ class StatsSummary(BaseModel):
     passed_tests: int
     failed_tests: int
     accuracy_pct: float
+    pass_rate_pct: float
+    current_streak_days: int
+
+
+class StatsGoal(BaseModel):
+    target_accuracy_pct: float
+    current_accuracy_pct: float
+    progress_pct: float
 
 class StatsHistoryItem(BaseModel):
     test_id: int
@@ -163,6 +171,7 @@ class ProblemDetail(BaseModel):
 
 class StatsResponse(BaseModel):
     summary: StatsSummary
+    goal: StatsGoal
     by_topic: List[TopicStat] = Field(default_factory=list)
     history: List[StatsHistoryItem] = Field(default_factory=list)
     trend: List[StatsTrendItem] = Field(default_factory=list)

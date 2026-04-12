@@ -378,6 +378,12 @@ def test_stats_repo_returns_real_sections(db_session):
     assert summary["passed_tests"] == 1
     assert summary["failed_tests"] == 1
     assert summary["accuracy_pct"] == 42.86
+    assert summary["pass_rate_pct"] == 50.0
+
+    activity_dates = repo.get_activity_dates(user_id="501", permit_id=permit.id)
+    assert len(activity_dates) == 1
+    assert activity_dates[0] == attempt_1.finished_at.date()
+
 
     by_topic = repo.get_by_topic(user_id="501", permit_id=permit.id)
     assert len(by_topic) == 2
@@ -393,3 +399,78 @@ def test_stats_repo_returns_real_sections(db_session):
 
     failed_distribution = repo.get_failed_distribution(user_id="501", permit_id=permit.id)
     assert failed_distribution == [{"topic_id": topic_2.id, "wrong_count": 1}]
+
+
+def test_stats_repo_summary_handles_zero_attempts(db_session):
+    permit = PermitModel(code="G", name="G")
+    db_session.add(permit)
+    db_session.commit()
+
+    repo = PostgresStatsRepository(db_session)
+
+    summary = repo.get_summary(user_id="no-attempts", permit_id=permit.id)
+
+    assert summary == {
+        "total_tests": 0,
+        "passed_tests": 0,
+        "failed_tests": 0,
+        "accuracy_pct": 0.0,
+        "pass_rate_pct": 0.0,
+    }
+
+
+def test_stats_repo_returns_distinct_activity_dates_descending(db_session):
+    permit = PermitModel(code="H", name="H")
+    db_session.add(permit)
+    db_session.flush()
+
+    topic = TopicModel(permit_id=permit.id, topic_number=1, name="Activity")
+    db_session.add(topic)
+    db_session.flush()
+
+    question = QuestionModel(external_id="QH-1", permit_id=permit.id, topic_id=topic.id, statement="QH", requires_image=False)
+    db_session.add(question)
+    db_session.flush()
+
+    test_model = TestModel(user_id="activity-user", mode="PERMIT", permit_id=permit.id, topic_id=None, num_questions=1)
+    db_session.add(test_model)
+    db_session.flush()
+
+    db_session.add_all(
+        [
+            AttemptModel(
+                test_id=test_model.id,
+                user_id="activity-user",
+                total_questions=1,
+                correct_count=1,
+                wrong_count=0,
+                score=100,
+                finished_at=datetime(2026, 1, 8, 10, 0, 0),
+            ),
+            AttemptModel(
+                test_id=test_model.id,
+                user_id="activity-user",
+                total_questions=1,
+                correct_count=1,
+                wrong_count=0,
+                score=100,
+                finished_at=datetime(2026, 1, 8, 18, 0, 0),
+            ),
+            AttemptModel(
+                test_id=test_model.id,
+                user_id="activity-user",
+                total_questions=1,
+                correct_count=1,
+                wrong_count=0,
+                score=100,
+                finished_at=datetime(2026, 1, 7, 9, 0, 0),
+            ),
+        ]
+    )
+    db_session.commit()
+
+    repo = PostgresStatsRepository(db_session)
+
+    activity_dates = repo.get_activity_dates(user_id="activity-user", permit_id=permit.id)
+
+    assert activity_dates == [datetime(2026, 1, 8).date(), datetime(2026, 1, 7).date()]

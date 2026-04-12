@@ -1,6 +1,7 @@
 import type { ReactElement, ReactNode } from 'react'
 import { render } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { MemoryRouter } from 'react-router-dom'
 import { AuthContext, type AuthContextValue } from '../features/auth/auth-context'
 import type { AuthUser } from '../features/auth/types'
 
@@ -37,9 +38,11 @@ export function renderWithProviders(ui: ReactElement, authOverrides?: Partial<Au
 
   function Wrapper({ children }: { children: ReactNode }) {
     return (
-      <QueryClientProvider client={queryClient}>
-        <AuthContext.Provider value={createAuthValue(authOverrides)}>{children}</AuthContext.Provider>
-      </QueryClientProvider>
+      <MemoryRouter>
+        <QueryClientProvider client={queryClient}>
+          <AuthContext.Provider value={createAuthValue(authOverrides)}>{children}</AuthContext.Provider>
+        </QueryClientProvider>
+      </MemoryRouter>
     )
   }
 

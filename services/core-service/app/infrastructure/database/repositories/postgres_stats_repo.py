@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Optional
 
 from sqlalchemy import case, func, select
@@ -43,12 +44,14 @@ class PostgresStatsRepository(StatsRepository):
         failed_tests = total_tests - passed_tests
         total_questions = int(row.total_questions or 0)
         accuracy_pct = round((float(row.total_correct or 0) / total_questions) * 100, 2) if total_questions else 0.0
+        pass_rate_pct = round((passed_tests / total_tests) * 100, 2) if total_tests else 0.0
 
         return {
             "total_tests": total_tests,
             "passed_tests": passed_tests,
             "failed_tests": failed_tests,
             "accuracy_pct": accuracy_pct,
+            "pass_rate_pct": pass_rate_pct,
         }
 
     def get_by_topic(self, *, user_id: str, permit_id: Optional[int] = None) -> list[dict]:
@@ -187,3 +190,30 @@ class PostgresStatsRepository(StatsRepository):
 
         rows = self.session.execute(stmt).all()
         return [{"topic_id": int(row.topic_id), "wrong_count": int(row.wrong_count or 0)} for row in rows]
+
+    def get_activity_dates(self, *, user_id: str, permit_id: Optional[int] = None) -> list[date]:
+        activity_at = func.coalesce(AttemptModel.finished_at, AttemptModel.started_at)
+
+        if self.session.bind and self.session.bind.dialect.name == "sqlite":
+            activity_date_expr = func.date(activity_at)
+        else:
+            activity_date_expr = func.date(activity_at)
+
+        stmt = (
+            select(activity_date_expr.label("activity_date"))
+            .select_from(AttemptModel)
+            .join(TestModel, TestModel.id == AttemptModel.test_id)
+            .where(*self._attempt_filters(user_id=user_id, permit_id=permit_id))
+            .group_by(activity_date_expr)
+            .order_by(activity_date_expr.desc())
+        )
+
+        rows = self.session.execute(stmt).all()
+        activity_dates: list[date] = []
+        for row in rows:
+            value = row.activity_date
+            if isinstance(value, date):
+                activity_dates.append(value)
+            elif isinstance(value, str):
+                activity_dates.append(date.fromisoformat(value))
+        return activity_dates

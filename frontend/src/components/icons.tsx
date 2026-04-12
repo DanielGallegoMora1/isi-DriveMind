@@ -32,6 +32,14 @@ export function HomeIcon({ className = 'size-5' }: IconProps) {
   )
 }
 
+export function SettingsIcon({ className = 'size-5' }: IconProps) {
+  return (
+    <svg aria-hidden="true" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9m-9 12h9M4.5 6h1.5m-1.5 12h1.5m3-9a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm10.5 6a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0ZM7.5 6h3m-3 12h3m3-9h6m-15 0h3" />
+    </svg>
+  )
+}
+
 export function TestsIcon({ className = 'size-5' }: IconProps) {
   return (
     <svg aria-hidden="true" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
@@ -53,5 +61,20 @@ export function AiChatIcon({ className = 'size-5' }: IconProps) {
     <svg aria-hidden="true" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" />
     </svg>
+  )
+}
+
+export function ProgressTrendIcon({ className = 'size-11' }: IconProps) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`${className} inline-flex items-center justify-center rounded-[18px] bg-[#EDE7F6] text-[#7C3AED]`}
+    >
+      <svg className="size-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.15}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 15.5 8.8 12.15l2.45 2.25 6-6.4" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8h-4.1" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8v4.1" />
+      </svg>
+    </span>
   )
 }

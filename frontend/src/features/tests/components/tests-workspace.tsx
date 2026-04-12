@@ -17,11 +17,11 @@ type FormState = {
   topicId: string
 }
 
-const modeOptions: Array<{ label: string; value: TestMode; description: string }> = [
-  { label: 'Por licencia', value: 'PERMIT', description: '30 preguntas del permiso seleccionado.' },
-  { label: 'Por tema', value: 'TOPIC', description: 'Practica un tema puntual del permiso.' },
-  { label: 'Random', value: 'RANDOM', description: 'Mezcla libre de preguntas del permiso.' },
-  { label: 'Falladas', value: 'FAILED', description: 'Repite tus preguntas falladas si existen.' },
+  const modeOptions: Array<{ label: string; value: TestMode; description: string }> = [
+    { label: 'Por licencia', value: 'PERMIT', description: '30 preguntas del permiso seleccionado.' },
+    { label: 'Por tema', value: 'TOPIC', description: 'Practica un tema concreto del permiso.' },
+    { label: 'Random', value: 'RANDOM', description: 'Mezcla libre de preguntas del permiso.' },
+    { label: 'Falladas', value: 'FAILED', description: 'Repite tus preguntas falladas si existen.' },
 ]
 
 const optionLabelMap: Record<TestOptionLabel, string> = {
@@ -93,12 +93,12 @@ export function TestsWorkspace({ accessToken }: TestsWorkspaceProps) {
     setResult(null)
 
     if (!selectedPermitCode) {
-      setFormError('Seleccioná una licencia antes de generar el test.')
+      setFormError('Selecciona una licencia antes de generar el test.')
       return
     }
 
     if (formState.mode === 'TOPIC' && !formState.topicId) {
-      setFormError('Elegí un tema para generar un test específico.')
+      setFormError('Elige un tema para generar un test específico.')
       return
     }
 
@@ -123,7 +123,7 @@ export function TestsWorkspace({ accessToken }: TestsWorkspaceProps) {
     }
 
     if (answeredCount !== activeTest.questions.length) {
-      setFormError('Necesitás responder las 30 preguntas antes de enviar el examen.')
+      setFormError('Tienes que responder las 30 preguntas antes de enviar el examen.')
       return
     }
 
@@ -154,15 +154,15 @@ export function TestsWorkspace({ accessToken }: TestsWorkspaceProps) {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="m-0 text-[0.78rem] font-bold tracking-[0.16em] uppercase text-[#7bd0ff]">Core service</p>
-            <h3 className="mt-3 mb-2 text-2xl text-white">Armá tu próximo test</h3>
+            <h3 className="mt-3 mb-2 text-2xl text-white">Prepara tu próximo test</h3>
             <p className="m-0 max-w-[62ch] text-sm text-[#9fb2cc]">
-              Configurá la práctica, generá el examen con el backend real y enviá las respuestas para obtener la corrección automática.
+              Configura la práctica, genera el examen con el backend real y envía las respuestas para obtener la corrección automática.
             </p>
           </div>
 
           <div className="rounded-2xl border border-[rgba(123,208,255,0.16)] bg-[rgba(123,208,255,0.08)] px-4 py-3 text-sm text-[#d8e1f0]">
             <strong className="block text-white">Regla actual</strong>
-            Aprobás con hasta 3 errores.
+            Apruebas con hasta 3 errores.
           </div>
         </div>
 
@@ -228,7 +228,7 @@ export function TestsWorkspace({ accessToken }: TestsWorkspaceProps) {
                 className="min-h-12 rounded-2xl border border-[rgba(141,177,229,0.16)] bg-[#081120] px-4 text-[#f5f7fb] outline-none"
                 disabled={topicsQuery.isLoading || topicsQuery.isError || !selectedPermitCode}
               >
-                <option value="">Seleccioná un tema</option>
+                <option value="">Selecciona un tema</option>
                 {topicsQuery.data?.map((topic) => (
                   <option key={topic.id} value={topic.id}>
                     {topic.topic_number}. {topic.name}
@@ -264,7 +264,7 @@ export function TestsWorkspace({ accessToken }: TestsWorkspaceProps) {
       {!testDetailsQuery.isLoading && !activeTest ? (
         <EmptyState
           title="Todavía no generaste un test"
-          description="Elegí una licencia, definí el modo y DriveMind te traerá 30 preguntas reales desde core-service."
+          description="Elige una licencia, define el modo y DriveMind te traerá 30 preguntas reales desde core-service."
         />
       ) : null}
 

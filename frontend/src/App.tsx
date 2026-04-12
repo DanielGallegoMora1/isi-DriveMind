@@ -5,6 +5,7 @@ import { AuthProvider } from './features/auth/auth-provider'
 import { AiChatPage } from './pages/ai-chat-page'
 import { HomePage } from './pages/home-page'
 import { LoginPage } from './pages/login-page'
+import { SettingsPage } from './pages/settings-page'
 import { StatsPage } from './pages/stats-page'
 import { TestsPage } from './pages/tests-page'
 
@@ -67,6 +68,7 @@ function AppRoutes() {
         <Route element={<TestsPage />} path="/tests" />
         <Route element={<StatsPage />} path="/stats" />
         <Route element={<AiChatPage />} path="/ai-chat" />
+        <Route element={<SettingsPage />} path="/settings" />
       </Route>
 
       <Route element={<Navigate replace to="/" />} path="*" />

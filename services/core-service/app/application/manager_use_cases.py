@@ -1,10 +1,12 @@
 from collections import defaultdict
+from datetime import date, datetime, timedelta
 from typing import List
-from datetime import datetime
 
 from app.domain.models import Test, TestAttempt
 from app.domain.ports import QuestionRepository, TestRepository, StatsRepository
+from app.infrastructure.config import settings
 from app.presentation.schemas import (
+    StatsGoal,
     TestGenerateRequest,
     TestSubmitRequest,
     TestResultResponse,
@@ -26,6 +28,22 @@ class TestManager:
         self.question_repo = question_repo
         self.test_repo = test_repo
         self.stats_repo = stats_repo
+
+    @staticmethod
+    def _compute_current_streak_days(activity_dates: list[date]) -> int:
+        if not activity_dates:
+            return 0
+
+        streak = 1
+        previous_date = activity_dates[0]
+
+        for activity_date in activity_dates[1:]:
+            if previous_date - activity_date != timedelta(days=1):
+                break
+            streak += 1
+            previous_date = activity_date
+
+        return streak
 
     def generate_test(self, user_id: str, request: TestGenerateRequest) -> Test:
         permit = self.question_repo.get_permit_by_code(request.permit_code)
@@ -159,9 +177,27 @@ class TestManager:
         history_data = self.stats_repo.get_history(user_id=user_id, permit_id=permit_id, limit=limit, offset=offset)
         trend_data = self.stats_repo.get_trend(user_id=user_id, permit_id=permit_id)
         failed_distribution_data = self.stats_repo.get_failed_distribution(user_id=user_id, permit_id=permit_id)
+        activity_dates = self.stats_repo.get_activity_dates(user_id=user_id, permit_id=permit_id)
+
+        current_accuracy_pct = float(summary_data.get("accuracy_pct", 0.0) or 0.0)
+        target_accuracy_pct = float(settings.stats_target_accuracy_pct)
+        progress_pct = 0.0
+        if target_accuracy_pct > 0:
+            progress_pct = round(min((current_accuracy_pct / target_accuracy_pct) * 100, 100.0), 2)
+
+        summary_payload = {
+            **summary_data,
+            "pass_rate_pct": float(summary_data.get("pass_rate_pct", 0.0) or 0.0),
+            "current_streak_days": self._compute_current_streak_days(activity_dates),
+        }
 
         return StatsResponse(
-            summary=StatsSummary(**summary_data),
+            summary=StatsSummary(**summary_payload),
+            goal=StatsGoal(
+                target_accuracy_pct=target_accuracy_pct,
+                current_accuracy_pct=round(current_accuracy_pct, 2),
+                progress_pct=progress_pct,
+            ),
             by_topic=[TopicStat(**item) for item in by_topic_data],
             history=[StatsHistoryItem(**item) for item in history_data],
             trend=[StatsTrendItem(**item) for item in trend_data],

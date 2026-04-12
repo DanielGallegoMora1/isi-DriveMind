@@ -11,7 +11,7 @@ export function Card({ children, className, as: Tag = 'div' }: CardProps) {
   return (
     <Tag
       className={clsx(
-        'rounded-[20px] border border-[rgba(141,177,229,0.12)] bg-[rgba(10,20,35,0.7)] p-6',
+        'rounded-[24px] border border-[#d7e0ea] bg-white p-6 shadow-[0_20px_45px_-28px_rgba(30,58,95,0.35)]',
         className,
       )}
     >

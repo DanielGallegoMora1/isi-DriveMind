@@ -1,72 +1,91 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../features/auth'
-import { AiChatIcon, HomeIcon, StatsIcon, TestsIcon } from './icons'
+import { AiChatIcon, HomeIcon, SettingsIcon, StatsIcon, TestsIcon } from './icons'
 import { Button } from './ui/button'
 
 const navigationItems = [
-  { to: '/', label: 'Home', icon: HomeIcon },
-  { to: '/tests', label: 'Tests', icon: TestsIcon },
-  { to: '/stats', label: 'Stats', icon: StatsIcon },
-  { to: '/ai-chat', label: 'AI Chat', icon: AiChatIcon },
+  { to: '/', label: 'Inicio', icon: HomeIcon },
+  { to: '/ai-chat', label: 'Asistente IA de DriveMind', icon: AiChatIcon },
+  { to: '/tests', label: 'Mis Tests', icon: TestsIcon },
+  { to: '/stats', label: 'Estadísticas', icon: StatsIcon },
+  { to: '/settings', label: 'Ajustes', icon: SettingsIcon },
 ]
 
 export function AppShell() {
   const { logout, user } = useAuth()
+  const initials = (user?.full_name ?? 'DM')
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((chunk) => chunk[0]?.toUpperCase() ?? '')
+    .join('')
+  const subtitle = `${formatRole(user?.role)} · Permiso B`
 
   return (
-    <div className="grid min-h-svh grid-cols-[300px_1fr] max-[960px]:grid-cols-1">
+    <div className="min-h-svh bg-[#F5F7FA] text-[#1E3A5F] lg:grid lg:grid-cols-[280px_1fr]">
       <aside
-        className="flex flex-col justify-between border-r border-[rgba(141,177,229,0.1)] p-8 max-[960px]:p-6"
-        style={{ background: 'rgba(7,15,27,0.86)', backdropFilter: 'blur(20px)' }}
+        className="flex flex-col justify-between border-r border-[#d9e2ec] bg-white p-6 lg:sticky lg:top-0 lg:h-svh"
       >
-        <div>
-          <p className="m-0 text-[0.78rem] font-bold tracking-[0.16em] uppercase text-[#7bd0ff]">
-            DriveMind
-          </p>
-          <h1 className="my-3 text-[2rem] leading-none text-[#f5f7fb]">
-            Learning cockpit
-          </h1>
-          <p className="text-[#9fb2cc] text-sm">
-            Prepara tu carnet. Practica, analiza, mejora.
-          </p>
+        <div className="grid gap-8">
+          <div>
+            <p className="m-0 text-[0.78rem] font-bold tracking-[0.18em] uppercase text-[#2C5F8A]">DriveMind</p>
+            <h1 className="my-3 text-[2rem] leading-none text-[#1E3A5F]">Panel del alumno</h1>
+            <p className="m-0 text-sm text-[#5f7287]">Tu panel diario para practicar, revisar el progreso y mantener la racha.</p>
+          </div>
+
+          <nav className="grid gap-2.5">
+            {navigationItems.map(({ to, label, icon: Icon }) => (
+              <NavLink
+                key={to}
+                to={to}
+                end={to === '/'}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 rounded-[18px] border px-4 py-3.5 text-sm transition-all duration-200 ${
+                    isActive
+                      ? 'border-[#cddaea] bg-[#edf3f8] text-[#1E3A5F] shadow-[0_18px_30px_-24px_rgba(30,58,95,0.45)]'
+                      : 'border-transparent text-[#5f7287] hover:border-[#d8e3ee] hover:bg-[#f7fafd] hover:text-[#1E3A5F]'
+                  }`
+                }
+              >
+                <Icon />
+                <span>{label}</span>
+              </NavLink>
+            ))}
+          </nav>
         </div>
 
-        <nav className="my-8 grid gap-2.5">
-          {navigationItems.map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === '/'}
-              className={({ isActive }) =>
-                `flex items-center gap-3 rounded-[14px] border px-4 py-3.5 text-sm transition-all duration-200 ${
-                  isActive
-                    ? 'border-[rgba(123,208,255,0.28)] bg-[rgba(123,208,255,0.12)] text-[#f5f7fb]'
-                    : 'border-transparent text-[#b9c7da] hover:border-[rgba(123,208,255,0.28)] hover:bg-[rgba(123,208,255,0.12)] hover:text-[#f5f7fb]'
-                }`
-              }
-            >
-              <Icon />
-              {label}
-            </NavLink>
-          ))}
-        </nav>
-
-        <div className="grid gap-4">
-          <div>
-            <p className="m-0 font-semibold text-white">{user?.full_name}</p>
-            <p className="m-0 text-sm text-[#9fb2cc]">
-              {user?.role} · {user?.email}
-            </p>
+        <div className="grid gap-4 rounded-[24px] bg-[#f7fafd] p-4">
+          <div className="flex items-center gap-3">
+            <div className="flex size-12 items-center justify-center rounded-full bg-[#1E3A5F] text-sm font-semibold text-white">
+              {initials}
+            </div>
+            <div>
+              <p className="m-0 font-semibold text-[#1E3A5F]">{user?.full_name}</p>
+              <p className="m-0 text-sm text-[#5f7287]">{subtitle}</p>
+            </div>
           </div>
-          <Button variant="secondary" onClick={logout} type="button">
+          <Button className="w-full" variant="secondary" onClick={logout} type="button">
             Cerrar sesión
           </Button>
         </div>
       </aside>
 
-      <main className="p-8 max-[960px]:p-6">
+      <main className="p-5 md:p-8 lg:p-10">
         <Outlet />
       </main>
     </div>
   )
+}
+
+function formatRole(role?: string | null) {
+  switch (role) {
+    case 'student':
+      return 'Alumno'
+    case 'school_admin':
+      return 'Administrador'
+    case 'system_admin':
+      return 'Admin sistema'
+    default:
+      return role ?? 'Usuario'
+  }
 }
