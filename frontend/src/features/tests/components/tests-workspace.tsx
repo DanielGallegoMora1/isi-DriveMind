@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
 import { ApiError } from '../../../lib/http'
 import { Card } from '../../../components/ui/card'
 import { EmptyState } from '../../../components/ui/empty-state'
@@ -60,38 +60,31 @@ export function TestsWorkspace({ accessToken }: TestsWorkspaceProps) {
     mode: 'PERMIT',
     topicId: '',
   })
-  const topicsEnabled = formState.permitCode.length > 0 && (formState.mode === 'TOPIC' || formState.mode === 'FAILED')
-  const topicsQuery = useTopics(accessToken, formState.permitCode, topicsEnabled)
+  const selectedPermitCode = formState.permitCode || permitsQuery.data?.[0]?.code || ''
+  const topicsEnabled = selectedPermitCode.length > 0 && (formState.mode === 'TOPIC' || formState.mode === 'FAILED')
+  const topicsQuery = useTopics(accessToken, selectedPermitCode, topicsEnabled)
   const generateTestMutation = useGenerateTest(accessToken)
   const [activeTestId, setActiveTestId] = useState<number | null>(null)
   const testDetailsQuery = useTestDetails(accessToken, activeTestId)
   const submitTestMutation = useSubmitTest(accessToken, activeTestId)
-  const [answers, setAnswers] = useState<Record<number, TestOptionLabel | undefined>>({})
+  const [selectedAnswers, setSelectedAnswers] = useState<Record<number, TestOptionLabel | undefined>>({})
   const [result, setResult] = useState<TestResult | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!formState.permitCode && permitsQuery.data && permitsQuery.data.length > 0) {
-      setFormState((current) => ({ ...current, permitCode: permitsQuery.data[0].code }))
-    }
-  }, [formState.permitCode, permitsQuery.data])
-
-  useEffect(() => {
-    if (testDetailsQuery.data) {
-      setAnswers(buildAnswersMap(testDetailsQuery.data.questions))
-    }
-  }, [testDetailsQuery.data])
-
-  useEffect(() => {
-    if (formState.mode !== 'TOPIC') {
-      setFormState((current) => (current.topicId ? { ...current, topicId: '' } : current))
-    }
-  }, [formState.mode])
-
   const activeTest = testDetailsQuery.data
+  const answers = useMemo(() => {
+    if (!activeTest) {
+      return {}
+    }
+
+    return {
+      ...buildAnswersMap(activeTest.questions),
+      ...selectedAnswers,
+    }
+  }, [activeTest, selectedAnswers])
   const answeredCount = useMemo(
-    () => Object.values(answers).filter((value) => value !== undefined).length,
-    [answers],
+    () => Object.values(selectedAnswers).filter((value) => value !== undefined).length,
+    [selectedAnswers],
   )
 
   async function handleGenerateTest(event: FormEvent<HTMLFormElement>) {
@@ -99,7 +92,7 @@ export function TestsWorkspace({ accessToken }: TestsWorkspaceProps) {
     setFormError(null)
     setResult(null)
 
-    if (!formState.permitCode) {
+    if (!selectedPermitCode) {
       setFormError('Seleccioná una licencia antes de generar el test.')
       return
     }
@@ -110,8 +103,10 @@ export function TestsWorkspace({ accessToken }: TestsWorkspaceProps) {
     }
 
     try {
+      setSelectedAnswers({})
+
       const generatedTest = await generateTestMutation.mutateAsync({
-        permit_code: formState.permitCode,
+        permit_code: selectedPermitCode,
         mode: formState.mode,
         topic_id: formState.mode === 'TOPIC' ? Number(formState.topicId) : undefined,
       })
@@ -143,12 +138,12 @@ export function TestsWorkspace({ accessToken }: TestsWorkspaceProps) {
   }
 
   function handleAnswerSelect(questionId: number, selectedLabel: TestOptionLabel) {
-    setAnswers((current) => ({ ...current, [questionId]: selectedLabel }))
+    setSelectedAnswers((current) => ({ ...current, [questionId]: selectedLabel }))
   }
 
   function handleStartAnotherTest() {
     setActiveTestId(null)
-    setAnswers({})
+    setSelectedAnswers({})
     setResult(null)
     setFormError(null)
   }
@@ -176,7 +171,7 @@ export function TestsWorkspace({ accessToken }: TestsWorkspaceProps) {
             <label className="text-sm font-semibold text-white" htmlFor="permit-code">Licencia</label>
             <select
               id="permit-code"
-              value={formState.permitCode}
+              value={selectedPermitCode}
               onChange={(event) => setFormState((current) => ({ ...current, permitCode: event.target.value }))}
               className="min-h-12 rounded-2xl border border-[rgba(141,177,229,0.16)] bg-[#081120] px-4 text-[#f5f7fb] outline-none"
               disabled={permitsQuery.isLoading || permitsQuery.isError}
@@ -207,7 +202,13 @@ export function TestsWorkspace({ accessToken }: TestsWorkspaceProps) {
                       name="test-mode"
                       value={option.value}
                       checked={formState.mode === option.value}
-                      onChange={() => setFormState((current) => ({ ...current, mode: option.value }))}
+                      onChange={() =>
+                        setFormState((current) => ({
+                          ...current,
+                          mode: option.value,
+                          topicId: option.value === 'TOPIC' ? current.topicId : '',
+                        }))
+                      }
                     />
                     {option.label}
                   </span>
@@ -225,7 +226,7 @@ export function TestsWorkspace({ accessToken }: TestsWorkspaceProps) {
                 value={formState.topicId}
                 onChange={(event) => setFormState((current) => ({ ...current, topicId: event.target.value }))}
                 className="min-h-12 rounded-2xl border border-[rgba(141,177,229,0.16)] bg-[#081120] px-4 text-[#f5f7fb] outline-none"
-                disabled={topicsQuery.isLoading || topicsQuery.isError || !formState.permitCode}
+                disabled={topicsQuery.isLoading || topicsQuery.isError || !selectedPermitCode}
               >
                 <option value="">Seleccioná un tema</option>
                 {topicsQuery.data?.map((topic) => (
@@ -241,7 +242,7 @@ export function TestsWorkspace({ accessToken }: TestsWorkspaceProps) {
           {formError ? <p className="m-0 text-sm text-red-300">{formError}</p> : null}
 
           <div className="flex flex-wrap gap-3">
-            <Button type="submit" disabled={generateTestMutation.isPending || permitsQuery.isLoading || !formState.permitCode}>
+            <Button type="submit" disabled={generateTestMutation.isPending || permitsQuery.isLoading || !selectedPermitCode}>
               {generateTestMutation.isPending ? 'Generando test…' : 'Generar test'}
             </Button>
             {activeTestId !== null ? (
