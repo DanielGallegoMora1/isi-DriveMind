@@ -1,16 +1,24 @@
 import { SectionPage } from '../components/section-page'
+import { useAuth } from '../features/auth'
+import { TestsWorkspace } from '../features/tests'
 
 export function TestsPage() {
+  const { accessToken } = useAuth()
+
   return (
-    <SectionPage
-      eyebrow="Tests"
-      title="Exámenes de conducir"
-      description="Genera tests por licencia, tema o de forma aleatoria. 30 preguntas por examen, corrección automática."
-      highlights={[
-        { label: 'Formato', value: '30 preguntas' },
-        { label: 'Modos', value: 'Licencia · Tema · Random' },
-        { label: 'Umbral de fallo', value: 'Más de 3 errores' },
-      ]}
-    />
+    <div className="grid gap-6">
+      <SectionPage
+        eyebrow="Tests"
+        title="Exámenes de conducir"
+        description="Generá tests por licencia, tema, random o preguntas falladas usando el core-service real."
+        highlights={[
+          { label: 'Formato', value: '30 preguntas' },
+          { label: 'Fuente', value: 'core-service' },
+          { label: 'Corrección', value: 'Automática' },
+        ]}
+      />
+
+      <TestsWorkspace accessToken={accessToken} />
+    </div>
   )
 }
