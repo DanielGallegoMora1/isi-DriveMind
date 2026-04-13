@@ -373,7 +373,7 @@ export function DashboardTestFlow({ accessToken, onBackToDashboard }: DashboardT
           onBackToDashboard={onBackToDashboard}
           onReviewAnswers={() => setStep('test-review')}
           onStartAnotherTest={() => void startTestSession(selectedOption, selectedTopic ?? undefined)}
-          permitLabel={`Permiso ${selectedPermit?.code ?? ''} · ${selectedPermit?.name ?? ''}`}
+          permitLabel={selectedPermit?.name ?? `Permiso ${selectedPermit?.code ?? ''}`}
           result={result}
           test={activeTest}
           testLabel={getTestOptionTitle(selectedOption)}

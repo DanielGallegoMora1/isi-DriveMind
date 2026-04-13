@@ -152,11 +152,6 @@ export function TestExamInterface({
               <h1 className="m-0 max-w-[20ch] text-[clamp(1.8rem,3vw,2.35rem)] leading-tight font-semibold text-[#1E3A5F]">
                 {activeQuestion.statement}
               </h1>
-              <p className="m-0 max-w-[62ch] text-sm leading-6 text-[#6A7E95]">
-                {isReviewMode
-                  ? 'Estás en modo revisión: podés recorrer el test completo sin perder las respuestas que ya habías marcado.'
-                  : 'Lee con calma y marca la respuesta correcta. Puedes moverte entre preguntas desde el panel derecho en cualquier momento.'}
-              </p>
             </div>
 
             {activeQuestion.requires_image ? (

@@ -104,9 +104,9 @@ function ResultMetric({
   } as const
 
   return (
-    <div className={`grid gap-3 rounded-[22px] border p-5 ${accentClasses[accent]}`}>
+    <div className={`grid min-h-[168px] justify-items-center gap-4 rounded-[22px] border p-6 text-center ${accentClasses[accent]}`}>
       <span className="inline-flex size-11 items-center justify-center rounded-full bg-white/90">{icon}</span>
-      <div className="grid gap-1">
+      <div className="grid justify-items-center gap-2 text-center">
         <strong className="text-3xl leading-none">{value}</strong>
         <span className="text-sm font-medium">{label}</span>
       </div>

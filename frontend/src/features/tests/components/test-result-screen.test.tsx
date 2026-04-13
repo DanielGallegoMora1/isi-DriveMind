@@ -30,7 +30,7 @@ function renderResult(result: TestResult) {
       onStartAnotherTest={() => {}}
       answeredCount={30}
       elapsedSeconds={125}
-      permitLabel="Permiso B · Turismos"
+      permitLabel="Permiso B"
       result={result}
       test={test}
       testLabel="Test aleatorio"
@@ -58,7 +58,7 @@ describe('TestResultScreen', () => {
     expect(screen.getByText('93,3%')).toBeInTheDocument()
     expect(screen.getByText(/Tiempo/, { selector: 'span' }).closest('p')).toHaveTextContent('Tiempo: 02:05')
     expect(screen.getByText(/Tipo de test/, { selector: 'span' }).closest('p')).toHaveTextContent('Tipo de test: Test aleatorio')
-    expect(screen.getAllByText(/Permiso/, { selector: 'span' })[0].closest('p')).toHaveTextContent('Permiso: Permiso B · Turismos')
+    expect(screen.getAllByText(/Permiso/, { selector: 'span' })[0].closest('p')).toHaveTextContent('Permiso: Permiso B')
     expect(screen.getByRole('button', { name: /revisar respuestas/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /nuevo test/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /dashboard/i })).toBeInTheDocument()
