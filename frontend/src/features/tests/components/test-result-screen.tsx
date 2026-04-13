@@ -43,7 +43,9 @@ export function TestResultScreen({
 }: TestResultScreenProps) {
   const appearance = result.passed ? resultAppearance.passed : resultAppearance.failed
   const totalQuestions = test.questions.length
-  const unansweredCount = Math.max(totalQuestions - answeredCount, 0)
+  const unansweredCount = result.review_items.length > 0
+    ? result.review_items.filter((item) => item.is_answered === false).length
+    : Math.max(totalQuestions - answeredCount, 0)
   const accuracy = totalQuestions > 0 ? (result.correct_count / totalQuestions) * 100 : 0
   const statusTitle = result.passed ? 'Test superado' : 'Test no superado'
 

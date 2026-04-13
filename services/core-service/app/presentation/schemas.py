@@ -98,18 +98,20 @@ class AnswerItem(BaseModel):
 
 class TestSubmitRequest(BaseModel):
     answers: List[AnswerItem]
-    
-    @model_validator(mode='after')
-    def check_answers_not_empty(self):
-        if len(self.answers) == 0:
-            raise ValueError('At least one answer must be submitted')
-        return self
 
 class TopicStat(BaseModel):
     topic_id: int
     correct: int
     wrong: int
     accuracy_pct: float
+
+
+class ReviewItem(BaseModel):
+    question_id: int
+    selected_label: Optional[Literal['a', 'b', 'c']] = None
+    is_answered: bool
+    correct_label: Literal['a', 'b', 'c']
+    is_correct: bool
 
 class TestResultResponse(BaseModel):
     test_id: int
@@ -118,6 +120,7 @@ class TestResultResponse(BaseModel):
     passed: bool
     score: Optional[int] = None
     by_topic: List[TopicStat] = Field(default_factory=list)
+    review_items: List[ReviewItem] = Field(default_factory=list)
 
 # --- Stats Summary ---
 class StatsSummary(BaseModel):

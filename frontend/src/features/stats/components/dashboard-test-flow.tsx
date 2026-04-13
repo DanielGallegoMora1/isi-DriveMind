@@ -55,10 +55,17 @@ function mapOptionToMode(option: TestOption['id']): TestMode {
 }
 
 function buildSubmitPayload(answers: Record<number, TestOptionLabel | undefined>) {
-  return Object.entries(answers).map(([questionId, selectedLabel]) => ({
-    question_id: Number(questionId),
-    selected_label: selectedLabel ?? 'a',
-  }))
+  return Object.entries(answers)
+    .flatMap(([questionId, selectedLabel]) =>
+      selectedLabel === undefined
+        ? []
+        : [
+            {
+              question_id: Number(questionId),
+              selected_label: selectedLabel,
+            },
+          ],
+    )
 }
 
 const permitPresentationMap: Record<string, PermitPresentation> = {
@@ -348,11 +355,6 @@ export function DashboardTestFlow({ accessToken, onBackToDashboard }: DashboardT
       return
     }
 
-    if (answeredCount !== activeTest.questions.length) {
-      setSessionError('Tienes que responder todas las preguntas antes de enviar el examen.')
-      return
-    }
-
     setSessionError(null)
 
     try {
@@ -399,6 +401,7 @@ export function DashboardTestFlow({ accessToken, onBackToDashboard }: DashboardT
           onQuestionChange={setActiveQuestionId}
           onStartAnotherTest={() => void startTestSession(selectedOption, selectedTopic ?? undefined)}
           onSubmit={handleSubmitTest}
+          reviewItems={result.review_items}
           selectedAnswers={selectedAnswers}
           test={activeTest}
           testLabel={getTestOptionTitle(selectedOption)}
@@ -417,7 +420,7 @@ export function DashboardTestFlow({ accessToken, onBackToDashboard }: DashboardT
           <p className="m-0 text-sm font-semibold tracking-[0.12em] uppercase text-[#2C5F8A]">Fase del test</p>
           <h2 className="m-0 text-[clamp(2rem,4vw,3.2rem)] leading-none text-[#1E3A5F]">Estás haciendo el test</h2>
           <p className="m-0 max-w-3xl text-sm text-[#5f7287] md:text-base">
-            Respondé cada pregunta con calma. Cuando envíes el test, te mostraremos una vista dedicada con el resultado completo.
+            Respondé cada pregunta con calma. Si enviás el test con preguntas en blanco, contarán como fallo y también aparecerán en la revisión.
           </p>
         </section>
 

@@ -7,6 +7,7 @@ from app.domain.ports import QuestionRepository, TestRepository, StatsRepository
 from app.infrastructure.config import settings
 from app.presentation.schemas import (
     StatsGoal,
+    ReviewItem,
     TestGenerateRequest,
     TestSubmitRequest,
     TestResultResponse,
@@ -82,7 +83,7 @@ class TestManager:
         expected_ids = set(test_question_ids)
         submitted_id_set = set(submitted_ids)
 
-        if len(request.answers) != test.num_questions or submitted_id_set != expected_ids:
+        if not submitted_id_set.issubset(expected_ids):
             raise ValueError("answers_not_in_test")
 
         question_by_id = {q.id: q for q in test.questions}
@@ -95,33 +96,48 @@ class TestManager:
             if ans.selected_label not in valid_labels:
                 raise ValueError("invalid_option_for_question")
 
-        q_ids = list(submitted_id_set)
-        correct_answers = self.question_repo.get_correct_answers(q_ids)
+        correct_answers = self.question_repo.get_correct_answers(test_question_ids)
+        answers_by_question_id = {ans.question_id: ans.selected_label for ans in request.answers}
 
         correct_count = 0
         wrong_count = 0
         
         topic_accumulator: dict[int, dict[str, int]] = defaultdict(lambda: {"correct": 0, "wrong": 0})
         answer_rows: list[dict] = []
+        review_items: list[ReviewItem] = []
 
-        for ans in request.answers:
-            expected_label = correct_answers.get(ans.question_id)
-            question = question_by_id[ans.question_id]
-            is_correct = expected_label == ans.selected_label
+        for question in test.questions:
+            expected_label = correct_answers.get(question.id)
+            if expected_label is None:
+                raise ValueError("correct_answer_not_found")
+            selected_label = answers_by_question_id.get(question.id)
+            is_answered = selected_label is not None
+            is_correct = is_answered and selected_label == expected_label
 
             if is_correct:
                 correct_count += 1
                 topic_accumulator[question.topic_id]["correct"] += 1
-            else:
+            elif is_answered:
                 wrong_count += 1
                 topic_accumulator[question.topic_id]["wrong"] += 1
 
-            answer_rows.append(
-                {
-                    "question_id": ans.question_id,
-                    "selected_label": ans.selected_label,
-                    "is_correct": is_correct,
-                }
+            if selected_label is not None:
+                answer_rows.append(
+                    {
+                        "question_id": question.id,
+                        "selected_label": selected_label,
+                        "correct_label": expected_label,
+                        "is_correct": is_correct,
+                    }
+                )
+            review_items.append(
+                ReviewItem(
+                    question_id=question.id,
+                    selected_label=selected_label,
+                    is_answered=is_answered,
+                    correct_label=expected_label,
+                    is_correct=is_correct,
+                )
             )
 
         attempt = TestAttempt(
@@ -152,6 +168,7 @@ class TestManager:
             passed=attempt.is_passed(),
             score=attempt.score,
             by_topic=by_topic,
+            review_items=review_items,
         )
 
     def get_stats(

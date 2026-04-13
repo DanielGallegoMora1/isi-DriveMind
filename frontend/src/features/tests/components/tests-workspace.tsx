@@ -47,10 +47,17 @@ function buildAnswersMap(questions: TestQuestion[]) {
 }
 
 function buildSubmitPayload(answers: Record<number, TestOptionLabel | undefined>): SubmitAnswer[] {
-  return Object.entries(answers).map(([questionId, selectedLabel]) => ({
-    question_id: Number(questionId),
-    selected_label: selectedLabel ?? 'a',
-  }))
+  return Object.entries(answers)
+    .flatMap(([questionId, selectedLabel]) =>
+      selectedLabel === undefined
+        ? []
+        : [
+            {
+              question_id: Number(questionId),
+              selected_label,
+            },
+          ],
+    )
 }
 
 export function TestsWorkspace({ accessToken }: TestsWorkspaceProps) {
@@ -119,11 +126,6 @@ export function TestsWorkspace({ accessToken }: TestsWorkspaceProps) {
 
   async function handleSubmitTest() {
     if (!activeTest) {
-      return
-    }
-
-    if (answeredCount !== activeTest.questions.length) {
-      setFormError('Tienes que responder las 30 preguntas antes de enviar el examen.')
       return
     }
 
@@ -276,7 +278,7 @@ export function TestsWorkspace({ accessToken }: TestsWorkspaceProps) {
             <div>
               <h3 className="m-0 text-xl text-white">Entrega del examen</h3>
               <p className="mt-1 mb-0 text-sm text-[#9fb2cc]">
-                Respondidas {answeredCount}/{activeTest.questions.length} preguntas.
+                Respondidas {answeredCount}/{activeTest.questions.length} preguntas. Las que dejes en blanco figurarán como sin responder y no sumarán como fallo.
               </p>
             </div>
 

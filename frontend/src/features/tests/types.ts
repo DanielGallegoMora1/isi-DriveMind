@@ -62,6 +62,14 @@ export type TopicResult = {
   accuracy_pct: number
 }
 
+export type TestResultReviewItem = {
+  question_id: number
+  selected_label: TestOptionLabel | null
+  is_answered: boolean
+  correct_label: TestOptionLabel
+  is_correct: boolean
+}
+
 export type TestResult = {
   test_id: number
   correct_count: number
@@ -69,4 +77,5 @@ export type TestResult = {
   passed: boolean
   score: number | null
   by_topic: TopicResult[]
+  review_items: TestResultReviewItem[]
 }

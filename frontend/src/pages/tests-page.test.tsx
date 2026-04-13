@@ -48,4 +48,32 @@ describe('TestsPage', () => {
     expect(screen.getAllByRole('button', { name: /volver al resultado/i }).length).toBeGreaterThan(0)
     expect(screen.getByRole('button', { name: /b opción b 30/i })).toBeDisabled()
   })
+
+  it('permite finalizar un test con preguntas sin responder y revisarlas después', async () => {
+    const user = userEvent.setup()
+
+    renderWithProviders(<TestsPage />)
+
+    await user.click(screen.getByRole('button', { name: /comenzar permiso b - turismos/i }))
+    await user.click(screen.getByRole('button', { name: /test aleatorio/i }))
+
+    expect(await screen.findByText('Mapa de preguntas')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /B Opción B 1/i }))
+
+    for (let questionNumber = 1; questionNumber < 30; questionNumber += 1) {
+      await user.click(screen.getByRole('button', { name: /siguiente/i }))
+    }
+
+    await user.click(screen.getAllByRole('button', { name: /finalizar test/i })[0])
+
+    expect(await screen.findByRole('heading', { name: 'Test superado' })).toBeInTheDocument()
+    expect(screen.getByText('Sin responder')).toBeInTheDocument()
+    expect(screen.getByText('Fallos').closest('div')).toHaveTextContent('0')
+
+    await user.click(screen.getByRole('button', { name: /revisar respuestas/i }))
+
+    expect(await screen.findByText('Revisión de respuestas')).toBeInTheDocument()
+    expect(screen.getByText(/Sin responder · no suma como fallo/i)).toBeInTheDocument()
+  })
 })

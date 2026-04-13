@@ -186,6 +186,11 @@ def test_submit_test_passed(test_manager: TestManager):
     assert result.correct_count == 30
     assert result.wrong_count == 0
     assert result.score == 100
+    assert len(result.review_items) == 30
+    assert result.review_items[0].question_id == 1
+    assert result.review_items[0].selected_label == 'a'
+    assert result.review_items[0].correct_label == 'a'
+    assert result.review_items[0].is_correct is True
 
 
 def test_submit_test_failed(test_manager: TestManager):
@@ -261,10 +266,70 @@ def test_submit_test_computes_by_topic_and_persists_answer_rows(test_manager: Te
     assert topic_2.wrong == 2
     assert topic_2.accuracy_pct == 80.0
 
+    review_item_16 = next(item for item in result.review_items if item.question_id == test.questions[15].id)
+    assert review_item_16.selected_label == "b"
+    assert review_item_16.correct_label == "a"
+    assert review_item_16.is_correct is False
+
     test_repo = test_manager.test_repo
     assert len(test_repo.saved_attempt_answers) == 30
     assert test_repo.saved_attempt_answers[0]["question_id"] == test.questions[0].id
     assert "is_correct" in test_repo.saved_attempt_answers[0]
+
+
+def test_submit_test_keeps_unanswered_questions_out_of_wrong_count_and_review_data(test_manager: TestManager):
+    request = TestGenerateRequest(permit_code="B", mode="RANDOM", count=30)
+    test = test_manager.generate_test(user_id="10", request=request)
+
+    for idx, question in enumerate(test.questions, start=1):
+        if idx > 20:
+            question.topic_id = 2
+
+    answers = [AnswerItem(question_id=i, selected_label="a") for i in range(1, 11)]
+    submit_req = TestSubmitRequest(answers=answers)
+
+    result = test_manager.submit_test(user_id="10", test_id=test.id, request=submit_req)
+
+    assert result.correct_count == 10
+    assert result.wrong_count == 0
+    assert result.passed is True
+    assert result.score == 33
+    assert len(result.review_items) == 30
+
+    answered_review = next(item for item in result.review_items if item.question_id == 1)
+    unanswered_review = next(item for item in result.review_items if item.question_id == 30)
+    assert answered_review.selected_label == "a"
+    assert answered_review.is_answered is True
+    assert answered_review.is_correct is True
+    assert unanswered_review.selected_label is None
+    assert unanswered_review.is_answered is False
+    assert unanswered_review.correct_label == "a"
+    assert unanswered_review.is_correct is False
+
+    topic_1 = next(item for item in result.by_topic if item.topic_id == 1)
+    assert topic_1.correct == 10
+    assert topic_1.wrong == 0
+    assert topic_1.accuracy_pct == 100.0
+    assert all(item.topic_id != 2 for item in result.by_topic)
+
+    test_repo = test_manager.test_repo
+    assert len(test_repo.saved_attempt_answers) == 10
+
+
+def test_submit_test_accepts_empty_answer_submission(test_manager: TestManager):
+    request = TestGenerateRequest(permit_code="B", mode="RANDOM", count=30)
+    test = test_manager.generate_test(user_id="10", request=request)
+
+    result = test_manager.submit_test(user_id="10", test_id=test.id, request=TestSubmitRequest(answers=[]))
+
+    assert result.correct_count == 0
+    assert result.wrong_count == 0
+    assert result.passed is True
+    assert result.score == 0
+    assert len(result.review_items) == 30
+    assert all(item.selected_label is None for item in result.review_items)
+    assert all(item.is_answered is False for item in result.review_items)
+    assert test_manager.test_repo.saved_attempt_answers == []
 
 
 def test_submit_test_rejects_duplicate_question_answers(test_manager: TestManager):

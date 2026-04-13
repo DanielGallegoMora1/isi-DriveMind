@@ -20,10 +20,9 @@ def test_test_generate_request_accepts_contract_mode_values():
     topic_req = TestGenerateRequest(permit_code="B", mode="topic", topic_id=7)
     assert topic_req.mode == "TOPIC"
 
-def test_test_submit_request_requires_at_least_one_answer():
-    with pytest.raises(ValidationError) as exc:
-        TestSubmitRequest(answers=[])
-    assert "At least one answer must be submitted" in str(exc.value)
+def test_test_submit_request_accepts_empty_answers_collection():
+    req = TestSubmitRequest(answers=[])
+    assert req.answers == []
 
 def test_test_submit_request_valid_answers_collection():
     answers = [AnswerItem(question_id=i, selected_label="b") for i in range(1, 13)]

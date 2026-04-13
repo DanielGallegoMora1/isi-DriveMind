@@ -228,6 +228,15 @@ def test_generate_test_and_submit():
     assert submit_data["wrong_count"] == 3
     # Debe ser TRUE porque la regla dice wrong_count <= 3
     assert submit_data["passed"] is True
+    assert len(submit_data["review_items"]) == 30
+    first_review_item = next(item for item in submit_data["review_items"] if item["question_id"] == gen_data["questions"][0]["id"])
+    assert first_review_item == {
+        "question_id": gen_data["questions"][0]["id"],
+        "selected_label": "a",
+        "is_answered": True,
+        "correct_label": "b",
+        "is_correct": False,
+    }
 
 
 def test_topics_filter_by_permit_code_and_unknown_permit_problem():
@@ -246,6 +255,46 @@ def test_topics_filter_by_permit_code_and_unknown_permit_problem():
     problem = unknown.json()
     assert problem["title"] == "Not Found"
     assert problem["detail"] == "permit_not_found"
+
+
+def test_submit_test_accepts_partial_answers_and_marks_unanswered_in_review():
+    headers = _auth_headers()
+
+    gen_response = client.post(
+        "/api/v1/tests/generate",
+        json={"permit_code": "B", "mode": "PERMIT"},
+        headers=headers,
+    )
+    assert gen_response.status_code == 200
+    gen_data = gen_response.json()
+
+    answers = [
+        {"question_id": gen_data["questions"][0]["id"], "selected_label": "b"},
+        {"question_id": gen_data["questions"][1]["id"], "selected_label": "a"},
+    ]
+
+    submit_response = client.post(f"/api/v1/tests/{gen_data['id']}/submit", json={"answers": answers}, headers=headers)
+    assert submit_response.status_code == 200
+
+    submit_data = submit_response.json()
+    assert submit_data["correct_count"] == 1
+    assert submit_data["wrong_count"] == 1
+    assert submit_data["passed"] is True
+    assert submit_data["score"] == 3
+    assert len(submit_data["review_items"]) == 30
+    answered_review = next(item for item in submit_data["review_items"] if item["question_id"] == gen_data["questions"][0]["id"])
+    unanswered_review = next(item for item in submit_data["review_items"] if item["question_id"] == gen_data["questions"][2]["id"])
+
+    assert answered_review["selected_label"] == "b"
+    assert answered_review["is_answered"] is True
+    assert answered_review["is_correct"] is True
+    assert unanswered_review == {
+        "question_id": gen_data["questions"][2]["id"],
+        "selected_label": None,
+        "is_answered": False,
+        "correct_label": "b",
+        "is_correct": False,
+    }
 
 
 def test_questions_random_uses_permit_code_resolver():

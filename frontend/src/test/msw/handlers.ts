@@ -82,21 +82,35 @@ export const handlers = [
   http.get('/core-api/v1/tests/77', () => HttpResponse.json(createGeneratedTestResponse())),
   http.post('/core-api/v1/tests/77/submit', async ({ request }) => {
     const payload = (await request.json()) as { answers: Array<{ question_id: number; selected_label: string }> }
-    const wrongCount = payload.answers.filter((answer) => answer.selected_label !== 'b').length
-    const correctCount = payload.answers.length - wrongCount
+    const answersByQuestionId = new Map(payload.answers.map((answer) => [answer.question_id, answer.selected_label]))
+    const totalQuestions = 30
+    const correctCount = Array.from({ length: totalQuestions }, (_, index) => index + 1).filter(
+      (questionId) => answersByQuestionId.get(questionId) === 'b',
+    ).length
+    const wrongCount = Array.from({ length: totalQuestions }, (_, index) => index + 1).filter((questionId) => {
+      const selectedLabel = answersByQuestionId.get(questionId)
+      return selectedLabel != null && selectedLabel !== 'b'
+    }).length
 
     return HttpResponse.json({
       test_id: 77,
       correct_count: correctCount,
       wrong_count: wrongCount,
       passed: wrongCount <= 3,
-      score: Math.round((correctCount / payload.answers.length) * 100),
+      score: Math.round((correctCount / totalQuestions) * 100),
+      review_items: Array.from({ length: totalQuestions }, (_, index) => ({
+        question_id: index + 1,
+        selected_label: answersByQuestionId.get(index + 1) ?? null,
+        is_answered: answersByQuestionId.has(index + 1),
+        correct_label: 'b',
+        is_correct: answersByQuestionId.get(index + 1) === 'b',
+      })),
       by_topic: [
         {
           topic_id: 101,
           correct: correctCount,
           wrong: wrongCount,
-          accuracy_pct: (correctCount / payload.answers.length) * 100,
+          accuracy_pct: (correctCount / totalQuestions) * 100,
         },
       ],
     })
