@@ -1,5 +1,6 @@
 export * from './api/tests.api'
 export * from './components/test-exam-interface'
+export * from './components/test-result-screen'
 export * from './components/tests-workspace'
 export * from './hooks/use-tests'
 export * from './types'

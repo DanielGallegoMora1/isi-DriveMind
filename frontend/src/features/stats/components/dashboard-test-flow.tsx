@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import permitBImage from '../../../assets/B.jpeg'
 import { Spinner } from '../../../components/ui/spinner'
 import { Button } from '../../../components/ui/button'
@@ -6,6 +6,7 @@ import { Card } from '../../../components/ui/card'
 import { ApiError } from '../../../lib/http'
 import {
   TestExamInterface,
+  TestResultScreen,
   useGenerateTest,
   usePermits,
   useSubmitTest,
@@ -23,7 +24,7 @@ type DashboardTestFlowProps = {
   onBackToDashboard: () => void
 }
 
-type FlowStep = 'permit-selection' | 'mode-selection' | 'test-session'
+type FlowStep = 'permit-selection' | 'mode-selection' | 'test-session' | 'test-result' | 'test-review'
 
 type PermitPresentation = {
   code: string
@@ -221,6 +222,8 @@ export function DashboardTestFlow({ accessToken, onBackToDashboard }: DashboardT
   const [selectedOption, setSelectedOption] = useState<TestOption['id'] | null>(null)
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null)
   const [activeTest, setActiveTest] = useState<GeneratedTest | null>(null)
+  const [activeQuestionId, setActiveQuestionId] = useState<number | null>(null)
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, TestOptionLabel | undefined>>({})
   const [result, setResult] = useState<TestResult | null>(null)
   const [sessionError, setSessionError] = useState<string | null>(null)
@@ -270,8 +273,22 @@ export function DashboardTestFlow({ accessToken, onBackToDashboard }: DashboardT
     [selectedAnswers],
   )
 
+  useEffect(() => {
+    if (step !== 'test-session' || !activeTest) {
+      return
+    }
+
+    const intervalId = window.setInterval(() => {
+      setElapsedSeconds((currentValue) => currentValue + 1)
+    }, 1000)
+
+    return () => window.clearInterval(intervalId)
+  }, [activeTest, step])
+
   function resetExamState() {
     setActiveTest(null)
+    setActiveQuestionId(null)
+    setElapsedSeconds(0)
     setSelectedAnswers({})
     setResult(null)
     setSessionError(null)
@@ -295,6 +312,7 @@ export function DashboardTestFlow({ accessToken, onBackToDashboard }: DashboardT
       })
 
       setActiveTest(generatedTest)
+      setActiveQuestionId(generatedTest.questions[0]?.id ?? 0)
     } catch (error) {
       setSessionError(error instanceof ApiError ? error.message : 'No pudimos generar el test real con core-service.')
     }
@@ -340,9 +358,54 @@ export function DashboardTestFlow({ accessToken, onBackToDashboard }: DashboardT
     try {
       const submission = await submitTestMutation.mutateAsync(buildSubmitPayload(selectedAnswers))
       setResult(submission)
+      setStep('test-result')
     } catch (error) {
       setSessionError(error instanceof ApiError ? error.message : 'No pudimos corregir el test en core-service.')
     }
+  }
+
+  if (step === 'test-result' && activeTest && selectedOption && result) {
+    return (
+      <div className="grid gap-6 xl:gap-7">
+        <TestResultScreen
+          answeredCount={answeredCount}
+          elapsedSeconds={elapsedSeconds}
+          onBackToDashboard={onBackToDashboard}
+          onReviewAnswers={() => setStep('test-review')}
+          onStartAnotherTest={() => void startTestSession(selectedOption, selectedTopic ?? undefined)}
+          permitLabel={`Permiso ${selectedPermit?.code ?? ''} · ${selectedPermit?.name ?? ''}`}
+          result={result}
+          test={activeTest}
+          testLabel={getTestOptionTitle(selectedOption)}
+        />
+      </div>
+    )
+  }
+
+  if (step === 'test-review' && activeTest && selectedOption) {
+    return (
+      <div className="grid gap-6 xl:gap-7">
+        <TestExamInterface
+          activeQuestionId={activeQuestionId ?? activeTest.questions[0]?.id ?? 0}
+          answeredCount={answeredCount}
+          elapsedSeconds={elapsedSeconds}
+          isReviewMode
+          isSubmitting={false}
+          onAnswerSelect={handleAnswerSelect}
+          onBackToDashboard={onBackToDashboard}
+          onBackToModeSelection={handleBackToModeSelection}
+          onBackToResult={() => setStep('test-result')}
+          onChangePermit={handleChangePermit}
+          onQuestionChange={setActiveQuestionId}
+          onStartAnotherTest={() => void startTestSession(selectedOption, selectedTopic ?? undefined)}
+          onSubmit={handleSubmitTest}
+          selectedAnswers={selectedAnswers}
+          test={activeTest}
+          testLabel={getTestOptionTitle(selectedOption)}
+          topics={availableTopics}
+        />
+      </div>
+    )
   }
 
   if (step === 'test-session' && selectedPermit && selectedOption) {
@@ -351,10 +414,10 @@ export function DashboardTestFlow({ accessToken, onBackToDashboard }: DashboardT
         <TopActionButton label="Volver al dashboard" onClick={onBackToDashboard} />
 
         <section className="grid gap-2">
-          <p className="m-0 text-sm font-semibold tracking-[0.12em] uppercase text-[#2C5F8A]">Fase de hacer test</p>
-          <h2 className="m-0 text-[clamp(2rem,4vw,3.2rem)] leading-none text-[#1E3A5F]">Ya estás en el examen real</h2>
+          <p className="m-0 text-sm font-semibold tracking-[0.12em] uppercase text-[#2C5F8A]">Fase del test</p>
+          <h2 className="m-0 text-[clamp(2rem,4vw,3.2rem)] leading-none text-[#1E3A5F]">Estás haciendo el test</h2>
           <p className="m-0 max-w-3xl text-sm text-[#5f7287] md:text-base">
-            DriveMind ya está consumiendo el core-service para generar el examen, registrar tus respuestas y devolver el resultado.
+            Respondé cada pregunta con calma. Cuando envíes el test, te mostraremos una vista dedicada con el resultado completo.
           </p>
         </section>
 
@@ -384,14 +447,16 @@ export function DashboardTestFlow({ accessToken, onBackToDashboard }: DashboardT
           <>
             {sessionError ? <p className="m-0 text-sm text-[#b94b4b]">{sessionError}</p> : null}
             <TestExamInterface
+              activeQuestionId={activeQuestionId ?? activeTest.questions[0]?.id ?? 0}
               answeredCount={answeredCount}
+              elapsedSeconds={elapsedSeconds}
               isSubmitting={submitTestMutation.isPending}
               onAnswerSelect={handleAnswerSelect}
               onBackToModeSelection={handleBackToModeSelection}
               onChangePermit={handleChangePermit}
+              onQuestionChange={setActiveQuestionId}
               onStartAnotherTest={() => void startTestSession(selectedOption, selectedTopic ?? undefined)}
               onSubmit={handleSubmitTest}
-              result={result}
               selectedAnswers={selectedAnswers}
               test={activeTest}
               testLabel={getTestOptionTitle(selectedOption)}

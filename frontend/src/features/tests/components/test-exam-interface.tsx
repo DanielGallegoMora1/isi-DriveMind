@@ -1,18 +1,24 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { clsx } from 'clsx'
 import { Card } from '../../../components/ui/card'
-import type { GeneratedTest, TestMode, TestOptionLabel, TestResult, Topic } from '../types'
+import { formatElapsedTime, getModeBadge } from '../test-session-helpers'
+import type { GeneratedTest, TestOptionLabel, Topic } from '../types'
 
 type TestExamInterfaceProps = {
+  activeQuestionId: number
   answeredCount: number
+  elapsedSeconds: number
+  isReviewMode?: boolean
   selectedAnswers: Record<number, TestOptionLabel | undefined>
-  result: TestResult | null
   test: GeneratedTest
   testLabel: string
   topics: Topic[]
   onAnswerSelect: (questionId: number, selectedLabel: TestOptionLabel) => void
+  onBackToDashboard?: () => void
   onBackToModeSelection: () => void
+  onBackToResult?: () => void
   onChangePermit: () => void
+  onQuestionChange: (questionId: number) => void
   onStartAnotherTest: () => void
   onSubmit: () => void
   isSubmitting: boolean
@@ -24,52 +30,35 @@ const optionLabelMap: Record<TestOptionLabel, string> = {
   c: 'C',
 }
 
-function formatAccuracy(value: number) {
-  return `${new Intl.NumberFormat('es-ES', { maximumFractionDigits: 1 }).format(value)}%`
-}
-
 function getTopicName(topics: Topic[], topicId: number) {
   const topic = topics.find((item) => item.id === topicId)
   return topic ? `Tema ${topic.topic_number}. ${topic.name}` : `Tema ${topicId}`
 }
 
-function getModeBadge(mode: TestMode, testLabel: string) {
-  switch (mode) {
-    case 'TOPIC':
-      return testLabel
-    case 'FAILED':
-      return 'Preguntas falladas'
-    case 'RANDOM':
-      return 'Test aleatorio'
-    case 'PERMIT':
-    default:
-      return 'Test por licencia'
-  }
-}
-
 export function TestExamInterface({
+  activeQuestionId,
   answeredCount,
+  elapsedSeconds,
+  isReviewMode = false,
   selectedAnswers,
-  result,
   test,
   testLabel,
   topics,
   onAnswerSelect,
+  onBackToDashboard,
   onBackToModeSelection,
+  onBackToResult,
   onChangePermit,
+  onQuestionChange,
   onStartAnotherTest,
   onSubmit,
   isSubmitting,
 }: TestExamInterfaceProps) {
-  const [activeQuestionId, setActiveQuestionId] = useState(test.questions[0]?.id ?? 0)
-
-  useEffect(() => {
-    setActiveQuestionId(test.questions[0]?.id ?? 0)
-  }, [test.id, test.questions])
-
   const activeQuestionIndex = Math.max(test.questions.findIndex((question) => question.id === activeQuestionId), 0)
   const activeQuestion = test.questions[activeQuestionIndex]
   const progressValue = test.questions.length > 0 ? (answeredCount / test.questions.length) * 100 : 0
+  const hasPreviousQuestion = activeQuestionIndex > 0
+  const isLastQuestion = activeQuestionIndex === test.questions.length - 1
 
   const questionStatuses = useMemo(
     () =>
@@ -87,7 +76,7 @@ export function TestExamInterface({
       return
     }
 
-    setActiveQuestionId(nextQuestionId)
+    onQuestionChange(nextQuestionId)
   }
 
   if (!activeQuestion) {
@@ -99,19 +88,19 @@ export function TestExamInterface({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <button
           type="button"
-          onClick={onBackToModeSelection}
+          onClick={isReviewMode ? onBackToResult : onBackToModeSelection}
           className="inline-flex w-fit items-center gap-2 rounded-full bg-transparent px-1 py-1 text-sm font-semibold text-[#2C5F8A] transition-colors duration-200 hover:text-[#1E3A5F]"
         >
           <ArrowLeftIcon />
-          <span>Volver a tipos de test</span>
+          <span>{isReviewMode ? 'Volver al resultado' : 'Volver a los tipos de test'}</span>
         </button>
 
         <button
           type="button"
-          onClick={onChangePermit}
+          onClick={isReviewMode ? onBackToDashboard : onChangePermit}
           className="inline-flex w-fit items-center gap-2 rounded-full bg-transparent px-1 py-1 text-sm font-semibold text-[#2C5F8A] transition-colors duration-200 hover:text-[#1E3A5F]"
         >
-          <span>Cambiar permiso</span>
+          <span>{isReviewMode ? 'Ir al dashboard' : 'Cambiar permiso'}</span>
         </button>
       </div>
 
@@ -138,16 +127,12 @@ export function TestExamInterface({
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-3 rounded-[14px] bg-[#F5F7FA] px-4 py-3 md:justify-self-end">
+        <div className="flex items-center justify-between gap-3 rounded-[14px] bg-[#F5F7FA] px-4 py-3 md:min-w-[180px] md:justify-self-end">
           <div>
-            <p className="m-0 text-xs uppercase tracking-[0.16em] text-[#6A7E95]">Preguntas</p>
-            <p className="m-0 mt-1 text-lg font-semibold text-[#1E3A5F]">{test.questions.length}</p>
+            <p className="m-0 text-xs uppercase tracking-[0.16em] text-[#6A7E95]">Tiempo</p>
+            <p className="m-0 mt-1 text-lg font-semibold text-[#1E3A5F]">{formatElapsedTime(elapsedSeconds)}</p>
           </div>
-          <div className="h-10 w-px bg-[#D7E0EA]" />
-          <div>
-            <p className="m-0 text-xs uppercase tracking-[0.16em] text-[#6A7E95]">Estado</p>
-            <p className="m-0 mt-1 text-sm font-semibold text-[#1E3A5F]">{answeredCount}/{test.questions.length} respondidas</p>
-          </div>
+          <span className="text-xs font-semibold text-[#6A7E95]">{answeredCount}/{test.questions.length}</span>
         </div>
       </header>
 
@@ -168,7 +153,9 @@ export function TestExamInterface({
                 {activeQuestion.statement}
               </h1>
               <p className="m-0 max-w-[62ch] text-sm leading-6 text-[#6A7E95]">
-                Leé con calma y marcá la respuesta correcta. Podés moverte entre preguntas desde el panel derecho en cualquier momento.
+                {isReviewMode
+                  ? 'Estás en modo revisión: podés recorrer el test completo sin perder las respuestas que ya habías marcado.'
+                  : 'Lee con calma y marca la respuesta correcta. Puedes moverte entre preguntas desde el panel derecho en cualquier momento.'}
               </p>
             </div>
 
@@ -193,12 +180,16 @@ export function TestExamInterface({
                   <button
                     key={option.id}
                     aria-label={`${optionLabelMap[option.label]} ${option.text}`}
+                    aria-pressed={isSelected}
                     className={clsx(
                       'flex w-full items-start gap-4 rounded-[16px] border px-4 py-4 text-left transition-all duration-200',
                       isSelected
                         ? 'border-[#2C5F8A] bg-[#EEF4F9] shadow-[0_18px_35px_-28px_rgba(44,95,138,0.6)]'
-                        : 'border-[#D7E0EA] bg-white hover:-translate-y-0.5 hover:border-[#B8CADD] hover:bg-[#FAFCFE] hover:shadow-[0_20px_40px_-32px_rgba(30,58,95,0.4)]',
+                        : isReviewMode
+                          ? 'border-[#D7E0EA] bg-white'
+                          : 'border-[#D7E0EA] bg-white hover:-translate-y-0.5 hover:border-[#B8CADD] hover:bg-[#FAFCFE] hover:shadow-[0_20px_40px_-32px_rgba(30,58,95,0.4)]',
                     )}
+                    disabled={isReviewMode}
                     onClick={() => onAnswerSelect(activeQuestion.id, option.label)}
                     type="button"
                   >
@@ -218,8 +209,13 @@ export function TestExamInterface({
 
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#E3EAF2] pt-2">
               <button
-                className="inline-flex min-h-12 items-center gap-2 rounded-full bg-[#E8EDF3] px-5 py-3 text-sm font-semibold text-[#8B9CB0] transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-100"
-                disabled={activeQuestionIndex === 0}
+                className={clsx(
+                  'inline-flex min-h-12 items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold transition-all duration-200',
+                  hasPreviousQuestion
+                    ? 'cursor-pointer border border-[#C6D6E6] bg-white text-[#1E3A5F] shadow-[0_16px_30px_-28px_rgba(30,58,95,0.45)] hover:-translate-y-0.5 hover:border-[#2C5F8A] hover:bg-[#F5F9FC] hover:text-[#244f73]'
+                    : 'cursor-not-allowed border border-[#E3EAF2] bg-[#E8EDF3] text-[#8B9CB0]',
+                )}
+                disabled={!hasPreviousQuestion}
                 onClick={() => goToQuestion(test.questions[activeQuestionIndex - 1]?.id ?? activeQuestion.id)}
                 type="button"
               >
@@ -227,13 +223,37 @@ export function TestExamInterface({
               </button>
 
               <button
-                className="inline-flex min-h-12 items-center gap-2 rounded-full bg-[#2C5F8A] px-5 py-3 text-sm font-semibold text-white shadow-[0_20px_35px_-24px_rgba(44,95,138,0.9)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#244f73] disabled:cursor-not-allowed disabled:bg-[#9db8cd]"
-                disabled={activeQuestionIndex === test.questions.length - 1}
-                onClick={() => goToQuestion(test.questions[activeQuestionIndex + 1]?.id ?? activeQuestion.id)}
+                className={clsx(
+                  'inline-flex min-h-12 items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-white shadow-[0_20px_35px_-24px_rgba(44,95,138,0.9)] transition-all duration-200',
+                  isReviewMode
+                    ? 'bg-[#1E3A5F] hover:-translate-y-0.5 hover:bg-[#16314f]'
+                    : isLastQuestion
+                    ? 'bg-[#2E7D5B] hover:-translate-y-0.5 hover:bg-[#276b4d] disabled:cursor-not-allowed disabled:bg-[#97c7b1]'
+                    : 'bg-[#2C5F8A] hover:-translate-y-0.5 hover:bg-[#244f73]',
+                )}
+                disabled={!isReviewMode && isLastQuestion && isSubmitting}
+                onClick={() => {
+                  if (isReviewMode) {
+                    if (isLastQuestion) {
+                      onBackToResult?.()
+                      return
+                    }
+
+                    goToQuestion(test.questions[activeQuestionIndex + 1]?.id ?? activeQuestion.id)
+                    return
+                  }
+
+                  if (isLastQuestion) {
+                    onSubmit()
+                    return
+                  }
+
+                  goToQuestion(test.questions[activeQuestionIndex + 1]?.id ?? activeQuestion.id)
+                }}
                 type="button"
               >
-                Siguiente
-                <span aria-hidden="true">→</span>
+                {isReviewMode ? (isLastQuestion ? 'Volver al resultado' : 'Siguiente') : isLastQuestion ? (isSubmitting ? 'Corrigiendo…' : 'Finalizar test') : 'Siguiente'}
+                <span aria-hidden="true">{isReviewMode && isLastQuestion ? '↩' : isLastQuestion ? '⚑' : '→'}</span>
               </button>
             </div>
           </div>
@@ -242,10 +262,7 @@ export function TestExamInterface({
         <Card as="aside" className="rounded-[16px] p-5 md:p-6">
           <div className="grid gap-6">
             <div>
-              <h2 className="m-0 text-xl font-semibold text-[#1E3A5F]">Mapa de preguntas</h2>
-              <p className="m-0 mt-2 text-sm leading-6 text-[#6A7E95]">
-                Saltá entre bloques, revisá las preguntas respondidas y detectá rápido las que incluyen apoyo visual.
-              </p>
+              <h2 className="m-0 text-xl font-semibold text-[#1E3A5F]">{isReviewMode ? 'Revisión de respuestas' : 'Mapa de preguntas'}</h2>
             </div>
 
             <div className="grid grid-cols-5 gap-3">
@@ -255,9 +272,11 @@ export function TestExamInterface({
                   className={clsx(
                     'relative inline-flex aspect-square items-center justify-center rounded-[14px] border text-sm font-semibold transition-all duration-200',
                     question.isActive
-                      ? 'border-[#1E3A5F] bg-[#1E3A5F] text-white shadow-[0_18px_30px_-24px_rgba(30,58,95,0.85)]'
+                      ? question.isAnswered
+                        ? 'border-[#10263E] bg-[#10263E] text-white shadow-[0_18px_30px_-24px_rgba(16,38,62,0.95)]'
+                        : 'border-[#1E3A5F] bg-[#1E3A5F] text-white shadow-[0_18px_30px_-24px_rgba(30,58,95,0.85)]'
                       : question.isAnswered
-                        ? 'border-[#BFD0E1] bg-[#EEF4F9] text-[#1E3A5F] hover:border-[#2C5F8A] hover:text-[#2C5F8A]'
+                        ? 'border-[#7E97B2] bg-[#B7C9DB] text-[#10263E] hover:border-[#2C5F8A] hover:bg-[#A8BED4] hover:text-[#10263E]'
                         : 'border-[#E1E8F0] bg-[#F3F6F9] text-[#6A7E95] hover:border-[#C8D5E2] hover:text-[#1E3A5F]',
                   )}
                   onClick={() => goToQuestion(question.id)}
@@ -274,107 +293,41 @@ export function TestExamInterface({
               ))}
             </div>
 
-            <div className="grid gap-3 rounded-[16px] bg-[#F5F7FA] p-4 text-sm text-[#5D7288]">
-              <LegendItem colorClass="bg-[#EEF4F9]" label="Respondida" markerClass="border border-[#BFD0E1]" />
-              <LegendItem colorClass="bg-[#F3F6F9]" label="Sin responder" markerClass="border border-[#E1E8F0]" />
-              <LegendItem colorClass="bg-[#FFF4DE]" label="Con imagen" markerClass="bg-[#F59E0B]" />
-            </div>
+            {isReviewMode ? (
+              <button
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#1E3A5F] px-5 py-3 text-sm font-semibold text-white shadow-[0_20px_35px_-24px_rgba(30,58,95,0.95)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#16314f]"
+                onClick={onBackToResult}
+                type="button"
+              >
+                <span aria-hidden="true">↩</span>
+                <span>Volver al resultado</span>
+              </button>
+            ) : (
+              <button
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#2E7D5B] px-5 py-3 text-sm font-semibold text-white shadow-[0_20px_35px_-24px_rgba(46,125,91,0.95)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#276b4d] disabled:cursor-not-allowed disabled:bg-[#97c7b1]"
+                disabled={isSubmitting}
+                onClick={onSubmit}
+                type="button"
+              >
+                <span aria-hidden="true">⚑</span>
+                <span>{isSubmitting ? 'Corrigiendo…' : 'Finalizar test'}</span>
+              </button>
+            )}
 
-            <button
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#2E7D5B] px-5 py-3 text-sm font-semibold text-white shadow-[0_20px_35px_-24px_rgba(46,125,91,0.95)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#276b4d] disabled:cursor-not-allowed disabled:bg-[#97c7b1]"
-              disabled={isSubmitting}
-              onClick={onSubmit}
-              type="button"
-            >
-              <span aria-hidden="true">⚑</span>
-              <span>{isSubmitting ? 'Corrigiendo…' : 'Finalizar test'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={onStartAnotherTest}
-              className="inline-flex min-h-12 items-center justify-center rounded-full border border-[#d8e3ee] bg-white px-5 py-3 text-sm font-semibold text-[#1E3A5F] transition-colors duration-200 hover:bg-[#f7fafd]"
-            >
-              Generar otro test
-            </button>
+            {isReviewMode ? null : (
+              <button
+                type="button"
+                onClick={onStartAnotherTest}
+                className="inline-flex min-h-12 items-center justify-center rounded-full border border-[#d8e3ee] bg-white px-5 py-3 text-sm font-semibold text-[#1E3A5F] transition-colors duration-200 hover:bg-[#f7fafd]"
+              >
+                Generar otro test
+              </button>
+            )}
           </div>
         </Card>
       </div>
 
-      {result ? <TestResultCard result={result} topics={topics} /> : null}
     </section>
-  )
-}
-
-function LegendItem({
-  colorClass,
-  label,
-  markerClass,
-}: {
-  colorClass: string
-  label: string
-  markerClass: string
-}) {
-  return (
-    <div className="flex items-center gap-3">
-      <span className={clsx('inline-flex size-8 items-center justify-center rounded-[10px]', colorClass)}>
-        <span className={clsx('size-3 rounded-full', markerClass)} />
-      </span>
-      <span>{label}</span>
-    </div>
-  )
-}
-
-function TestResultCard({ result, topics }: { result: TestResult; topics: Topic[] }) {
-  return (
-    <Card as="section" className="grid gap-5">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <p className="m-0 text-[0.78rem] font-bold tracking-[0.16em] uppercase text-[#7bd0ff]">Resultado</p>
-          <h3 className="mt-2 mb-1 text-2xl text-white">{result.passed ? 'Aprobado' : 'No aprobado'}</h3>
-          <p className="m-0 text-sm text-[#9fb2cc]">Core-service devolvió la corrección del examen enviado.</p>
-        </div>
-
-        <div className="rounded-2xl border border-[rgba(141,177,229,0.12)] bg-[rgba(8,17,32,0.9)] px-5 py-4 text-right">
-          <span className="block text-sm text-[#9fb2cc]">Score</span>
-          <strong className="text-3xl text-white">{result.score ?? 0}</strong>
-        </div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <ResultMetric label="Correctas" value={String(result.correct_count)} />
-        <ResultMetric label="Incorrectas" value={String(result.wrong_count)} />
-        <ResultMetric label="Estado" value={result.passed ? 'Aprobado' : 'Fallado'} />
-      </div>
-
-      {result.by_topic.length > 0 ? (
-        <div className="grid gap-3">
-          <h4 className="m-0 text-lg text-white">Desglose por tema</h4>
-          <div className="grid gap-3 md:grid-cols-2">
-            {result.by_topic.map((topic) => (
-              <div
-                key={topic.topic_id}
-                className="rounded-2xl border border-[rgba(141,177,229,0.12)] bg-[rgba(8,17,32,0.9)] p-4"
-              >
-                <strong className="block text-white">{getTopicName(topics, topic.topic_id)}</strong>
-                <p className="mt-2 mb-0 text-sm text-[#9fb2cc]">
-                  {topic.correct} correctas · {topic.wrong} incorrectas · {formatAccuracy(topic.accuracy_pct)} de precisión
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
-    </Card>
-  )
-}
-
-function ResultMetric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-[rgba(141,177,229,0.12)] bg-[rgba(8,17,32,0.9)] p-4">
-      <span className="block text-sm text-[#9fb2cc]">{label}</span>
-      <strong className="mt-2 block text-2xl text-white">{value}</strong>
-    </div>
   )
 }
 
