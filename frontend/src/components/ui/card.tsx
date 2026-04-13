@@ -1,10 +1,10 @@
-import type { ReactNode } from 'react'
+import type { JSX, ReactNode } from 'react'
 import { clsx } from 'clsx'
 
 type CardProps = {
   children: ReactNode
   className?: string
-  as?: 'div' | 'article' | 'section'
+  as?: keyof JSX.IntrinsicElements
 }
 
 export function Card({ children, className, as: Tag = 'div' }: CardProps) {
