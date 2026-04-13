@@ -54,7 +54,7 @@ function buildSubmitPayload(answers: Record<number, TestOptionLabel | undefined>
         : [
             {
               question_id: Number(questionId),
-              selected_label,
+              selected_label: selectedLabel,
             },
           ],
     )
