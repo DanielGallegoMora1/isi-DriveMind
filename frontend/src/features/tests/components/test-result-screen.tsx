@@ -1,4 +1,15 @@
 import type { ReactNode } from 'react'
+import {
+  Check,
+  CircleCheckBig,
+  CircleX,
+  Eye,
+  House,
+  RotateCcw,
+  Target,
+  TriangleAlert,
+  X,
+} from 'lucide-react'
 import { Card } from '../../../components/ui/card'
 import { formatAccuracy, formatElapsedTime, getModeBadge } from '../test-session-helpers'
 import type { GeneratedTest, TestResult } from '../types'
@@ -65,10 +76,10 @@ export function TestResultScreen({
 
       <div className="grid gap-6 bg-white px-6 py-6 md:px-10 md:py-8">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <ResultMetric accent="green" icon={<CheckIcon />} label="Aciertos" value={String(result.correct_count)} />
-          <ResultMetric accent="red" icon={<CrossIcon />} label="Fallos" value={String(result.wrong_count)} />
-          <ResultMetric accent="amber" icon={<WarningIcon />} label="Sin responder" value={String(unansweredCount)} />
-          <ResultMetric accent="blue" icon={<TargetIcon />} label="Tasa de acierto" value={formatAccuracy(accuracy)} />
+          <ResultMetric accent="green" icon={<Check aria-hidden="true" className="size-5" strokeWidth={2.2} />} label="Aciertos" value={String(result.correct_count)} />
+          <ResultMetric accent="red" icon={<X aria-hidden="true" className="size-5" strokeWidth={2.2} />} label="Fallos" value={String(result.wrong_count)} />
+          <ResultMetric accent="amber" icon={<TriangleAlert aria-hidden="true" className="size-5" strokeWidth={2} />} label="Sin responder" value={String(unansweredCount)} />
+          <ResultMetric accent="blue" icon={<Target aria-hidden="true" className="size-5" strokeWidth={2} />} label="Tasa de acierto" value={formatAccuracy(accuracy)} />
         </div>
 
         <div className="grid gap-2 border-t border-[#e7edf4] pt-4 text-sm text-[#5f7287] md:grid-cols-3 md:gap-4">
@@ -78,9 +89,9 @@ export function TestResultScreen({
         </div>
 
         <div className="grid gap-3 md:grid-cols-3">
-          <ActionButton icon={<EyeIcon />} label="Revisar respuestas" onClick={onReviewAnswers} variant="secondary" />
-          <ActionButton icon={<ReloadIcon />} label="Nuevo test" onClick={onStartAnotherTest} variant="primary" />
-          <ActionButton icon={<HomeIcon />} label="Dashboard" onClick={onBackToDashboard} variant="secondary" />
+          <ActionButton icon={<Eye aria-hidden="true" className="size-5" strokeWidth={2} />} label="Revisar respuestas" onClick={onReviewAnswers} variant="secondary" />
+          <ActionButton icon={<RotateCcw aria-hidden="true" className="size-5" strokeWidth={2} />} label="Nuevo test" onClick={onStartAnotherTest} variant="primary" />
+          <ActionButton icon={<House aria-hidden="true" className="size-5" strokeWidth={2} />} label="Dashboard" onClick={onBackToDashboard} variant="secondary" />
         </div>
       </div>
     </Card>
@@ -152,73 +163,10 @@ function ActionButton({
   )
 }
 
-function CheckIcon() {
-  return (
-    <svg aria-hidden="true" className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="m5 12 4.25 4.25L19 6.5" />
-    </svg>
-  )
-}
-
-function CrossIcon() {
-  return (
-    <svg aria-hidden="true" className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="m7 7 10 10M17 7 7 17" />
-    </svg>
-  )
-}
-
-function WarningIcon() {
-  return (
-    <svg aria-hidden="true" className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01" />
-    </svg>
-  )
-}
-
-function TargetIcon() {
-  return (
-    <svg aria-hidden="true" className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <circle cx="12" cy="12" r="8" />
-      <circle cx="12" cy="12" r="4" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 2v2m0 16v2m10-10h-2M4 12H2" />
-    </svg>
-  )
-}
-
-function EyeIcon() {
-  return (
-    <svg aria-hidden="true" className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5s8.268 2.943 9.542 7c-1.274 4.057-5.065 7-9.542 7S3.732 16.057 2.458 12Z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  )
-}
-
-function ReloadIcon() {
-  return (
-    <svg aria-hidden="true" className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M20 11a8 8 0 1 0 2.33 5.66M20 11V4m0 7h-7" />
-    </svg>
-  )
-}
-
-function HomeIcon() {
-  return (
-    <svg aria-hidden="true" className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="m3 10.5 9-7 9 7" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M5 9.5V20h14V9.5" />
-    </svg>
-  )
-}
-
 function ResultStatusIcon({ passed }: { passed: boolean }) {
-  return (
-    <svg aria-hidden="true" className="size-9" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}>
-      <circle cx="12" cy="12" r="8.5" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M8.5 9.5h.01M15.5 9.5h.01" />
-      {passed ? <path strokeLinecap="round" strokeLinejoin="round" d="M8.5 14c.95 1.25 2.16 1.9 3.5 1.9s2.55-.65 3.5-1.9" /> : <path strokeLinecap="round" strokeLinejoin="round" d="M8.5 16c.95-1.25 2.16-1.9 3.5-1.9s2.55.65 3.5 1.9" />}
-    </svg>
-  )
+  if (passed) {
+    return <CircleCheckBig aria-hidden="true" className="size-9" strokeWidth={1.9} />
+  }
+
+  return <CircleX aria-hidden="true" className="size-9" strokeWidth={1.9} />
 }
