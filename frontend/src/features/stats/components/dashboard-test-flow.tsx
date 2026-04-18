@@ -3,6 +3,16 @@ import permitBImage from '../../../assets/B.jpeg'
 import { Spinner } from '../../../components/ui/spinner'
 import { Button } from '../../../components/ui/button'
 import { Card } from '../../../components/ui/card'
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  CarIcon,
+  LayersIcon,
+  MotorcycleIcon,
+  RefreshIcon,
+  ShuffleIcon,
+  TruckIcon,
+} from '../../../components/icons'
 import { ApiError } from '../../../lib/http'
 import {
   TestExamInterface,
@@ -384,7 +394,7 @@ export function DashboardTestFlow({ accessToken, onBackToDashboard }: DashboardT
     )
   }
 
-  if (step === 'test-review' && activeTest && selectedOption) {
+  if (step === 'test-review' && activeTest && selectedOption && result) {
     return (
       <div className="grid gap-6 xl:gap-7">
         <TestExamInterface
@@ -663,70 +673,6 @@ function FlowOptionIcon({ icon, accent }: { icon: TestOption['icon']; accent: Te
       {icon === 'shuffle' ? <ShuffleIcon /> : null}
       {icon === 'refresh' ? <RefreshIcon /> : null}
     </span>
-  )
-}
-
-function ArrowLeftIcon() {
-  return (
-    <svg aria-hidden="true" className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="m15 18-6-6 6-6" />
-    </svg>
-  )
-}
-
-function ArrowRightIcon() {
-  return (
-    <svg aria-hidden="true" className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="m9 6 6 6-6 6" />
-    </svg>
-  )
-}
-
-function CarIcon() {
-  return (
-    <svg aria-hidden="true" className="size-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M7 16h10m-8.5 3a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Zm7 0a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM5 16V9.8c0-.46.158-.906.448-1.263l1.8-2.215A2 2 0 0 1 8.8 5.6h6.4a2 2 0 0 1 1.552.722l1.8 2.215c.29.357.448.804.448 1.263V16M5 12h14" />
-    </svg>
-  )
-}
-
-function MotorcycleIcon() {
-  return (
-    <svg aria-hidden="true" className="size-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M6 17.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Zm12 0a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM8.5 15h4l2-4h-3.2l-1.8-2.5H7.5m8 2.5 1.5-2h2" />
-    </svg>
-  )
-}
-
-function TruckIcon() {
-  return (
-    <svg aria-hidden="true" className="size-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 7.5h10.5v8.25H3.75V7.5Zm10.5 2.25h3l2.25 2.25v3.75h-5.25V9.75ZM7.5 18a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Zm9 0a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" />
-    </svg>
-  )
-}
-
-function LayersIcon() {
-  return (
-    <svg aria-hidden="true" className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="m12 5 7 4-7 4-7-4 7-4Zm7 8-7 4-7-4m14 4-7 4-7-4" />
-    </svg>
-  )
-}
-
-function ShuffleIcon() {
-  return (
-    <svg aria-hidden="true" className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 3.75H20.25V7.5M20.25 3.75l-5.5 5.5m-5 5-6 6m0-4.25V20.25H7.5M3.75 3.75 9.5 9.5m5 5 5.75 5.75" />
-    </svg>
-  )
-}
-
-function RefreshIcon() {
-  return (
-    <svg aria-hidden="true" className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992V4.356m-1.26 14.395A8.966 8.966 0 0 1 12 21a9 9 0 0 1-8.485-6M7.977 14.652H2.985v4.992m1.26-14.395A8.966 8.966 0 0 1 12 3a9 9 0 0 1 8.485 6" />
-    </svg>
   )
 }
 

@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { clsx } from 'clsx'
 import { Card } from '../../../components/ui/card'
+import { ArrowLeftIcon } from '../../../components/icons'
 import { formatElapsedTime, getModeBadge } from '../test-session-helpers'
 import type { GeneratedTest, TestOptionLabel, TestResultReviewItem, Topic } from '../types'
 
@@ -131,19 +132,23 @@ export function TestExamInterface({
 
   const questionStatuses = useMemo(
     () =>
-      test.questions.map((question) => ({
-        ...question,
-        isActive: question.id === activeQuestionId,
-        isAnswered: Boolean(selectedAnswers[question.id]),
-        reviewState:
+      test.questions.map((question) => {
+        const reviewState: 'correct' | 'incorrect' | 'unanswered' | 'neutral' =
           reviewItemsByQuestionId[question.id] && reviewItemsByQuestionId[question.id]?.is_answered === false
             ? 'unanswered'
             : reviewItemsByQuestionId[question.id]?.is_correct
               ? 'correct'
               : reviewItemsByQuestionId[question.id]
                 ? 'incorrect'
-                : 'neutral',
-      })),
+                : 'neutral'
+
+        return {
+          ...question,
+          isActive: question.id === activeQuestionId,
+          isAnswered: Boolean(selectedAnswers[question.id]),
+          reviewState,
+        }
+      }),
     [activeQuestionId, reviewItemsByQuestionId, selectedAnswers, test.questions],
   )
 
@@ -429,10 +434,3 @@ export function TestExamInterface({
   )
 }
 
-function ArrowLeftIcon() {
-  return (
-    <svg aria-hidden="true" className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="m15 18-6-6 6-6" />
-    </svg>
-  )
-}
