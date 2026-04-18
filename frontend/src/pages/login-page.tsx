@@ -49,7 +49,7 @@ export function LoginPage() {
     <div className="grid min-h-svh grid-cols-[1.15fr_0.85fr] max-[960px]:grid-cols-1">
       {/* Panel izquierdo — Brand */}
       <section
-        className="relative overflow-hidden flex items-start justify-center p-12 max-[960px]:p-6"
+        className="relative overflow-hidden flex items-center justify-center p-12 max-[960px]:items-start max-[960px]:p-6"
         style={{ background: 'linear-gradient(135deg, #1e3a8a, #2563eb, #22c55e)' }}
       >
         {/* Decoraciones */}
@@ -70,23 +70,6 @@ export function LoginPage() {
             Practica con tests reales, sigue tu progreso y prepárate con una
             experiencia clara, moderna y enfocada en aprobar.
           </p>
-
-          {/* CTA Card glassmorphism */}
-          <div className="grid w-full gap-3.5 rounded-[28px] border border-white/20 bg-white/10 p-6 backdrop-blur-[18px]">
-            <label className="grid gap-2.5 text-[0.95rem] text-white" htmlFor="login-brand-demo">
-              <span>Explora la plataforma</span>
-              <input
-                id="login-brand-demo"
-                readOnly
-                type="text"
-                placeholder="Tu progreso empieza con una sesión"
-                className="w-full rounded-[18px] border border-white/20 bg-white/10 px-[18px] py-[15px] text-white placeholder:text-[#e5e7eb] outline-none"
-              />
-            </label>
-            <Button variant="brand" type="button" className="rounded-[18px]">
-              Descubrir DriveMind
-            </Button>
-          </div>
 
           {/* Stats */}
           <div
@@ -154,14 +137,6 @@ export function LoginPage() {
                 />
               </div>
             </label>
-
-            <button
-              type="button"
-              className="w-fit border-0 bg-transparent p-0 text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors"
-            >
-              ¿Olvidaste tu contraseña?
-            </button>
-
             {submitError ? (
               <p className="m-0 text-[0.95rem] text-red-600">{submitError}</p>
             ) : null}
@@ -175,20 +150,6 @@ export function LoginPage() {
               {isSubmitting ? 'Ingresando...' : 'Iniciar sesión'}
             </Button>
           </form>
-
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-1.5 text-center text-[#6b7280]">
-            <span>¿No tienes cuenta?</span>
-            <button
-              type="button"
-              className="border-0 bg-transparent p-0 font-semibold text-blue-500 hover:text-blue-700 transition-colors"
-            >
-              Regístrate aquí
-            </button>
-          </div>
-
-          <p className="mt-[18px] mb-0 text-sm text-[#9fb2cc]">
-            El acceso sigue usando el flujo actual conectado al auth-service.
-          </p>
         </div>
       </section>
     </div>
