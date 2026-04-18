@@ -430,14 +430,14 @@ export function DashboardTestFlow({ accessToken, onBackToDashboard }: DashboardT
           <p className="m-0 text-sm font-semibold tracking-[0.12em] uppercase text-[#2C5F8A]">Fase del test</p>
           <h2 className="m-0 text-[clamp(2rem,4vw,3.2rem)] leading-none text-[#1E3A5F]">Estás haciendo el test</h2>
           <p className="m-0 max-w-3xl text-sm text-[#5f7287] md:text-base">
-            Respondé cada pregunta con calma. Si enviás el test con preguntas en blanco, contarán como fallo y también aparecerán en la revisión.
+            Responde cada pregunta con calma. Si envías el test con preguntas en blanco, contarán como fallo y también aparecerán en la revisión.
           </p>
         </section>
 
         {generateTestMutation.isPending && !activeTest ? (
           <Card as="section" className="flex min-h-80 items-center justify-center gap-3 py-12">
             <Spinner className="border-[#d1dceb] border-t-[#2C5F8A]" />
-            <span className="text-sm text-[#5f7287]">Generando el test real desde core-service…</span>
+            <span className="text-sm text-[#5f7287]">Generando el test</span>
           </Card>
         ) : null}
 
@@ -527,9 +527,9 @@ export function DashboardTestFlow({ accessToken, onBackToDashboard }: DashboardT
             <section className="grid gap-4 rounded-[24px] border border-[#dbe3ec] bg-white p-5 shadow-[0_20px_45px_-32px_rgba(30,58,95,0.2)]">
               <div className="grid gap-2">
                 <p className="m-0 text-sm font-semibold tracking-[0.12em] uppercase text-[#2C5F8A]">Selección de tema</p>
-                <h3 className="m-0 text-2xl text-[#1E3A5F]">Elegí el tema para empezar el test</h3>
+                <h3 className="m-0 text-2xl text-[#1E3A5F]">Elige el tema para empezar el test</h3>
                 <p className="m-0 text-sm leading-6 text-[#5f7287]">
-                  Al seleccionar un tema pasás directamente a la fase de hacer test sin salir del dashboard.
+                  Al seleccionar un tema pasas directamente a la fase de hacer test sin salir del dashboard.
                 </p>
                 {topicsQuery.isLoading ? <p className="m-0 text-sm text-[#5f7287]">Cargando temas del backend…</p> : null}
                 {topicsQuery.isError || !topicsQuery.data?.length ? (
@@ -556,7 +556,7 @@ export function DashboardTestFlow({ accessToken, onBackToDashboard }: DashboardT
 
               {availableTopics.length === 0 ? (
                 <p className="m-0 rounded-[20px] bg-[#f6f9fc] p-4 text-sm text-[#5f7287]">
-                  No encontramos temas para este permiso todavía. Probá con otro permiso o volvé más tarde.
+                  No encontramos temas para este permiso todavía. Prueba con otro permiso o vuelve más tarde.
                 </p>
               ) : null}
             </section>

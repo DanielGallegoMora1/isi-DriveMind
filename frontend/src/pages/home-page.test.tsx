@@ -39,11 +39,11 @@ describe('HomePage', () => {
     expect(screen.getByText('Test por temas')).toBeInTheDocument()
     expect(screen.getByText('Test aleatorio')).toBeInTheDocument()
     expect(screen.getByText('Preguntas falladas')).toBeInTheDocument()
-    expect(screen.queryByText('Elegí el tema para empezar el test')).not.toBeInTheDocument()
+    expect(screen.queryByText('Elige el tema para empezar el test')).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /test por temas/i }))
 
-    expect(screen.getByText('Elegí el tema para empezar el test')).toBeInTheDocument()
+    expect(screen.getByText('Elige el tema para empezar el test')).toBeInTheDocument()
     expect(screen.getByText('Tema 1')).toBeInTheDocument()
     expect(screen.getByText('Señales')).toBeInTheDocument()
 

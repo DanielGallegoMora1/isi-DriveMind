@@ -56,7 +56,7 @@ export function AppShell() {
 
         <div className="grid gap-4 rounded-[24px] bg-[#f7fafd] p-4">
           <div className="flex items-center gap-3">
-            <div className="flex size-12 items-center justify-center rounded-full bg-[#1E3A5F] text-sm font-semibold text-white">
+            <div className="flex size-12 min-h-12 min-w-12 shrink-0 aspect-square items-center justify-center rounded-full bg-[#1E3A5F] text-sm leading-none font-semibold text-white">
               {initials}
             </div>
             <div>
