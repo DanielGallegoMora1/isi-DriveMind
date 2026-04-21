@@ -7,7 +7,13 @@ class Settings(BaseSettings):
     db_name: str = "drivemind"
     db_user: str = "postgres"
     db_password: str = "postgres"
+    secret_key: str = "drivemind-super-secret-change-in-prod"
+    algorithm: str = "HS256"
     hf_token: str = ""
+    hf_model: str = "openai/gpt-oss-120b:cerebras"
+    hf_timeout_seconds: int = 20
+    hf_max_retries: int = 2
+    ai_context_window_messages: int = 10
 
     @property
     def database_url(self) -> str:

@@ -77,6 +77,8 @@ services:
     build:
       context: ./services/ai-service
       dockerfile: Dockerfile
+    volumes:
+      - ./services/ai-service:/app
     ports:
       - "8003:8000"
     environment:
