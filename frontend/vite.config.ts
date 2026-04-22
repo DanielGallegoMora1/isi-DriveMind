@@ -19,6 +19,11 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/core-api/, '/api'),
         },
+        '/ai-api': {
+          target: env.VITE_AI_PROXY_TARGET ?? 'http://127.0.0.1:8003',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/ai-api/, '/api'),
+        },
       },
     },
     test: {

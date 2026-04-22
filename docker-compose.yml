@@ -104,12 +104,15 @@ services:
       VITE_AUTH_PROXY_TARGET: http://auth-service:8000
       VITE_CORE_SERVICE_URL: /core-api
       VITE_CORE_PROXY_TARGET: http://core-service:8000
+      VITE_AI_SERVICE_URL: /ai-api
+      VITE_AI_PROXY_TARGET: http://ai-service:8000
     volumes:
       - ./frontend:/app
       - frontend-node_modules:/app/node_modules
     depends_on:
       - auth-service
       - core-service
+      - ai-service
     networks:
       - drivemind
 
