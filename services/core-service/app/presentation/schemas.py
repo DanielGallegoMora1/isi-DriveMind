@@ -1,6 +1,7 @@
-from pydantic import BaseModel, Field, field_validator, model_validator
-from typing import List, Optional, Literal
 from datetime import datetime
+from typing import List, Optional, Literal
+
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 # --- Common Responses ---
 class PaginatedResponse(BaseModel):
@@ -103,6 +104,7 @@ class TestSubmitRequest(BaseModel):
 
 class TopicStat(BaseModel):
     topic_id: int
+    topic_name: Optional[str] = None
     correct: int
     wrong: int
     accuracy_pct: float
@@ -154,6 +156,7 @@ class StatsHistoryItem(BaseModel):
     accuracy_pct: float
     permit_code: Optional[str] = None
     topic_id: Optional[int] = None
+    test_type: Optional[str] = None
 
 class StatsTrendItem(BaseModel):
     period: str
@@ -162,7 +165,41 @@ class StatsTrendItem(BaseModel):
 
 class FailedDistributionItem(BaseModel):
     topic_id: int
+    topic_name: Optional[str] = None
     wrong_count: int
+
+
+class TestTypeDistributionItem(BaseModel):
+    test_type: str
+    tests: int
+    percentage: float
+
+
+class WeeklyActivityItem(BaseModel):
+    date: str
+    tests: int
+
+
+class TopicInsight(BaseModel):
+    topic_id: int
+    topic_name: Optional[str] = None
+    correct: int
+    wrong: int
+    accuracy_pct: float
+
+
+class AccuracyTrendInsight(BaseModel):
+    window_days: int
+    recent_accuracy_pct: float
+    previous_accuracy_pct: float
+    change_pct_points: float
+    direction: Literal["up", "down", "stable"]
+
+
+class StatsInsights(BaseModel):
+    strongest_topic: Optional[TopicInsight] = None
+    improvement_area: Optional[TopicInsight] = None
+    trend: AccuracyTrendInsight
 
 
 class ProblemValidationError(BaseModel):
@@ -186,3 +223,6 @@ class StatsResponse(BaseModel):
     history: List[StatsHistoryItem] = Field(default_factory=list)
     trend: List[StatsTrendItem] = Field(default_factory=list)
     failed_distribution: List[FailedDistributionItem] = Field(default_factory=list)
+    test_type_distribution: List[TestTypeDistributionItem] = Field(default_factory=list)
+    weekly_activity: List[WeeklyActivityItem] = Field(default_factory=list)
+    insights: StatsInsights

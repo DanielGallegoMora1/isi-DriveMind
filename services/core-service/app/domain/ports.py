@@ -80,3 +80,21 @@ class StatsRepository(ABC):
     @abstractmethod
     def get_activity_dates(self, *, user_id: str, permit_id: Optional[int] = None) -> List[date]:
         pass
+
+    @abstractmethod
+    def get_test_type_distribution(self, *, user_id: str, permit_id: Optional[int] = None) -> List[Dict]:
+        pass
+
+    @abstractmethod
+    def get_daily_activity(self, *, user_id: str, permit_id: Optional[int] = None) -> List[Dict]:
+        pass
+
+    @abstractmethod
+    def get_accuracy_comparison(
+        self,
+        *,
+        user_id: str,
+        permit_id: Optional[int] = None,
+        window_days: int = 7,
+    ) -> Dict:
+        pass

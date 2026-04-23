@@ -380,6 +380,17 @@ def test_stats_returns_real_sections_for_student():
     assert isinstance(payload["history"], list)
     assert isinstance(payload["trend"], list)
     assert isinstance(payload["failed_distribution"], list)
+    assert isinstance(payload["test_type_distribution"], list)
+    assert isinstance(payload["weekly_activity"], list)
+    assert "insights" in payload
+    assert payload["history"][0]["test_type"] == "PERMIT"
+    assert payload["test_type_distribution"][0]["test_type"] == "PERMIT"
+    assert len(payload["weekly_activity"]) == 7
+    assert payload["insights"]["strongest_topic"]["topic_id"] == 1
+    assert payload["insights"]["improvement_area"]["topic_id"] == 1
+    assert payload["insights"]["trend"]["window_days"] == 7
+    assert payload["insights"]["trend"]["direction"] in {"up", "down", "stable"}
+    assert payload["trend"][0]["period"].count("-") == 2
     assert payload["summary"]["failed_tests"] >= 1
 
 

@@ -1,0 +1,597 @@
+import type { ReactNode } from 'react'
+import { clsx } from 'clsx'
+import { AlertCircle, ArrowDownRight, ArrowUpRight, CheckCircle2 } from 'lucide-react'
+import { Card } from '../../../components/ui/card'
+import { EmptyState } from '../../../components/ui/empty-state'
+import { Spinner } from '../../../components/ui/spinner'
+import { useStats } from '../hooks/use-stats'
+import type {
+  AccuracyTrendInsight,
+  StatsByTopic,
+  StatsHistoryItem,
+  StatsResponse,
+  StatsTrendItem,
+  TestTypeDistributionItem,
+  TopicInsight,
+  WeeklyActivityItem,
+} from '../types'
+
+type StatsAnalyticsDashboardProps = {
+  accessToken: string | null
+}
+
+const trendPalette = {
+  accuracy: '#2453d0',
+  passRate: '#2e7d5b',
+}
+
+const distributionPalette = ['#2453d0', '#2e7d5b', '#f3a83b', '#8b5cf6', '#ef6b5a']
+
+const testTypeLabels: Record<string, string> = {
+  PERMIT: 'Por permiso',
+  TOPIC: 'Por tema',
+  RANDOM: 'Aleatorio',
+  FAILED: 'Preguntas falladas',
+}
+
+const weekDayFormatter = new Intl.DateTimeFormat('es-ES', { weekday: 'short' })
+const shortDateFormatter = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' })
+const longDateFormatter = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
+
+export function StatsAnalyticsDashboard({ accessToken }: StatsAnalyticsDashboardProps) {
+  const statsQuery = useStats(accessToken)
+
+  if (!accessToken) {
+    return <EmptyState title="Sin sesión activa" description="Inicia sesión para cargar tus estadísticas personales." />
+  }
+
+  if (statsQuery.isLoading) {
+    return (
+      <Card className="flex min-h-80 items-center justify-center gap-3 py-12">
+        <Spinner className="border-[#d1dceb] border-t-[#2C5F8A]" />
+        <span className="text-sm text-[#5f7287]">Cargando estadísticas…</span>
+      </Card>
+    )
+  }
+
+  if (statsQuery.isError || !statsQuery.data) {
+    return (
+      <EmptyState
+        title="No hemos podido cargar tus estadísticas"
+        description="Vuelve a intentarlo en unos segundos. Este panel depende del contrato real de GET /api/v1/stats."
+      />
+    )
+  }
+
+  const data = normalizeStats(statsQuery.data)
+  const strongestTopic = data.insights.strongest_topic ?? inferStrongestTopic(data.by_topic)
+  const improvementArea = data.insights.improvement_area ?? inferImprovementArea(data.by_topic)
+  const trendInsight = data.insights.trend ?? inferTrendInsight(data.trend)
+  const chartSeries = buildTrendSeries(data.trend, data.history)
+  const periodLabel = buildPeriodLabel(data.trend, data.weekly_activity)
+
+  return (
+    <section className="grid gap-6 text-[#1E3A5F]">
+      <header className="grid gap-4 rounded-[28px] border border-[#dce5ef] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(246,249,252,0.96))] p-6 shadow-[0_20px_45px_-30px_rgba(30,58,95,0.22)] md:p-8">
+        <div className="grid gap-2">
+          <p className="m-0 text-sm font-semibold tracking-[0.16em] uppercase text-[#2C5F8A]">Análisis de rendimiento</p>
+          <h1 className="m-0 text-[clamp(2rem,4vw,3rem)] leading-none">Estadísticas</h1>
+          <p className="m-0 max-w-3xl text-sm text-[#5f7287] md:text-base">
+            Revisa cómo evolucionan tus resultados, qué tipo de test haces con más frecuencia y dónde conviene reforzar el estudio.
+          </p>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-3">
+          <HeaderMetric label="Tests realizados" value={String(data.summary.total_tests)} />
+          <HeaderMetric label="Aciertos medios" value={formatPercentage(data.summary.accuracy_pct)} />
+          <HeaderMetric label="Aprobados" value={formatPercentage(data.summary.pass_rate_pct)} />
+        </div>
+      </header>
+
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
+        <TrendCard series={chartSeries} subtitle={periodLabel} />
+        <DistributionCard items={data.test_type_distribution} totalTests={data.summary.total_tests} />
+      </section>
+
+      <ByTopicCard topics={data.by_topic} />
+
+      <WeeklyActivityCard items={data.weekly_activity} />
+
+      <section className="grid gap-4 xl:grid-cols-3">
+        <InsightCard
+          icon={<CheckCircle2 className="size-5" />}
+          title="Punto fuerte"
+          variant="strong"
+          description={buildStrongestTopicCopy(strongestTopic)}
+        />
+        <InsightCard
+          icon={<AlertCircle className="size-5" />}
+          title="Área de mejora"
+          variant="improve"
+          description={buildImprovementCopy(improvementArea)}
+        />
+        <InsightCard
+          icon={
+            trendInsight.direction === 'down' ? <ArrowDownRight className="size-5" /> : <ArrowUpRight className="size-5" />
+          }
+          title="Tendencia"
+          variant="trend"
+          description={buildTrendCopy(trendInsight)}
+        />
+      </section>
+    </section>
+  )
+}
+
+function normalizeStats(data: StatsResponse) {
+  return {
+    summary: data.summary,
+    history: data.history ?? [],
+    goal: data.goal,
+    by_topic: data.by_topic ?? [],
+    trend: data.trend ?? [],
+    failed_distribution: data.failed_distribution ?? [],
+    test_type_distribution: data.test_type_distribution ?? [],
+    weekly_activity: data.weekly_activity ?? [],
+    insights: data.insights ?? {
+      strongest_topic: null,
+      improvement_area: null,
+      trend: {
+        window_days: 7,
+        recent_accuracy_pct: 0,
+        previous_accuracy_pct: 0,
+        change_pct_points: 0,
+        direction: 'stable' as const,
+      },
+    },
+  }
+}
+
+function HeaderMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-[22px] border border-[#e3eaf2] bg-white/90 p-4 shadow-[0_16px_32px_-28px_rgba(30,58,95,0.45)]">
+      <p className="m-0 text-sm text-[#5f7287]">{label}</p>
+      <strong className="mt-2 block text-2xl text-[#1E3A5F]">{value}</strong>
+    </div>
+  )
+}
+
+function TrendCard({ series, subtitle }: { series: TrendSeriesItem[]; subtitle: string }) {
+  return (
+    <Card as="section" className="grid gap-5 p-6 md:p-7">
+      <div className="grid gap-1">
+        <h2 className="m-0 text-2xl text-[#1E3A5F]">Evolución del rendimiento</h2>
+        <p className="m-0 text-sm text-[#5f7287]">{subtitle}</p>
+      </div>
+
+      {series.length > 0 ? <TrendChart series={series} /> : <InlineMessage message="Todavía no hay suficiente histórico para dibujar la evolución diaria." />}
+
+      <div className="flex flex-wrap gap-4 border-t border-[#ecf1f6] pt-4 text-sm text-[#5f7287]">
+        <LegendItem color={trendPalette.accuracy} label="% de aciertos" />
+        <LegendItem color={trendPalette.passRate} label="% de aprobados" />
+      </div>
+    </Card>
+  )
+}
+
+function TrendChart({ series }: { series: TrendSeriesItem[] }) {
+  const width = 620
+  const height = 260
+  const padding = { top: 20, right: 18, bottom: 34, left: 32 }
+  const innerWidth = width - padding.left - padding.right
+  const innerHeight = height - padding.top - padding.bottom
+  const ticks = [0, 25, 50, 75, 100]
+
+  const accuracyPoints = series.map((item, index) => {
+    const x = padding.left + (series.length === 1 ? innerWidth / 2 : (innerWidth / (series.length - 1)) * index)
+    const y = padding.top + innerHeight - (clamp(item.accuracy_pct) / 100) * innerHeight
+    return { x, y, item }
+  })
+
+  const passRatePoints = series.map((item, index) => {
+    const x = padding.left + (series.length === 1 ? innerWidth / 2 : (innerWidth / (series.length - 1)) * index)
+    const y = padding.top + innerHeight - (clamp(item.pass_rate_pct) / 100) * innerHeight
+    return { x, y, item }
+  })
+
+  return (
+    <div className="overflow-x-auto">
+      <svg aria-label="Gráfico de evolución del rendimiento" className="min-w-full" viewBox={`0 0 ${width} ${height}`}>
+        {ticks.map((tick) => {
+          const y = padding.top + innerHeight - (tick / 100) * innerHeight
+          return (
+            <g key={tick}>
+              <line x1={padding.left} x2={width - padding.right} y1={y} y2={y} stroke="#e8eef5" strokeDasharray="4 6" />
+              <text x={8} y={y + 4} fill="#7a8ca0" fontSize="11">
+                {tick}%
+              </text>
+            </g>
+          )
+        })}
+
+        <path d={buildPolylinePath(accuracyPoints)} fill="none" stroke={trendPalette.accuracy} strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" />
+        <path d={buildPolylinePath(passRatePoints)} fill="none" stroke={trendPalette.passRate} strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" />
+
+        {accuracyPoints.map(({ x, y, item }) => (
+          <g key={`accuracy-${item.period}`}>
+            <circle cx={x} cy={y} fill="white" r="4.5" stroke={trendPalette.accuracy} strokeWidth="3" />
+          </g>
+        ))}
+
+        {passRatePoints.map(({ x, y, item }) => (
+          <g key={`pass-${item.period}`}>
+            <circle cx={x} cy={y} fill="white" r="4.5" stroke={trendPalette.passRate} strokeWidth="3" />
+          </g>
+        ))}
+
+        {series.map((item, index) => {
+          const x = padding.left + (series.length === 1 ? innerWidth / 2 : (innerWidth / (series.length - 1)) * index)
+          return (
+            <text key={item.period} x={x} y={height - 10} fill="#7a8ca0" fontSize="11" textAnchor="middle">
+              {formatChartDay(item.period)}
+            </text>
+          )
+        })}
+      </svg>
+    </div>
+  )
+}
+
+function DistributionCard({ items, totalTests }: { items: TestTypeDistributionItem[]; totalTests: number }) {
+  const normalizedItems = items.slice(0, 5).map((item, index) => ({
+    ...item,
+    label: testTypeLabels[item.test_type] ?? item.test_type,
+    color: distributionPalette[index % distributionPalette.length],
+  }))
+
+  return (
+    <Card as="section" className="grid gap-5 p-6 md:p-7">
+      <div className="grid gap-1">
+        <h2 className="m-0 text-2xl text-[#1E3A5F]">Distribución de tests</h2>
+        <p className="m-0 text-sm text-[#5f7287]">Reparto real por tipo de práctica registrada.</p>
+      </div>
+
+      {normalizedItems.length > 0 ? (
+        <>
+          <DonutChart items={normalizedItems} total={Math.max(totalTests, normalizedItems.reduce((sum, item) => sum + item.tests, 0))} />
+          <div className="grid gap-3">
+            {normalizedItems.map((item) => (
+              <div key={item.test_type} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 text-sm">
+                <span className="size-3 rounded-full" style={{ backgroundColor: item.color }} />
+                <span className="text-[#44576b]">{item.label}</span>
+                <span className="font-semibold text-[#1E3A5F]">{item.tests}</span>
+              </div>
+            ))}
+          </div>
+        </>
+      ) : (
+        <InlineMessage message="Aún no hay distribución suficiente para mostrar el anillo por tipo de test." />
+      )}
+    </Card>
+  )
+}
+
+function DonutChart({
+  items,
+  total,
+}: {
+  items: Array<TestTypeDistributionItem & { label: string; color: string }>
+  total: number
+}) {
+  const radius = 58
+  const circumference = 2 * Math.PI * radius
+  const segments = items.reduce<Array<(TestTypeDistributionItem & { label: string; color: string; dash: number; offset: number })>>(
+    (accumulator, item) => {
+      const previousOffset = accumulator.at(-1)?.offset ?? 0
+      const previousDash = accumulator.at(-1)?.dash ?? 0
+      const offset = previousOffset + previousDash
+      accumulator.push({
+        ...item,
+        dash: (item.tests / total) * circumference,
+        offset,
+      })
+      return accumulator
+    },
+    [],
+  )
+
+  return (
+    <div className="flex items-center justify-center py-2">
+      <div className="relative size-48">
+        <svg className="size-full -rotate-90" viewBox="0 0 160 160">
+          <circle cx="80" cy="80" fill="none" r={radius} stroke="#edf2f7" strokeWidth="16" />
+          {segments.map((item) => (
+            <circle
+              key={item.test_type}
+              cx="80"
+              cy="80"
+              fill="none"
+              r={radius}
+              stroke={item.color}
+              strokeDasharray={`${item.dash} ${circumference - item.dash}`}
+              strokeDashoffset={-item.offset}
+              strokeLinecap="round"
+              strokeWidth="16"
+            />
+          ))}
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+          <span className="text-xs font-semibold tracking-[0.14em] uppercase text-[#7a8ca0]">Total</span>
+          <strong className="text-3xl text-[#1E3A5F]">{total}</strong>
+          <span className="text-sm text-[#5f7287]">tests</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ByTopicCard({ topics }: { topics: StatsByTopic[] }) {
+  return (
+    <Card as="section" className="grid gap-5 p-6 md:p-7">
+      <div className="grid gap-1">
+        <h2 className="m-0 text-2xl text-[#1E3A5F]">Rendimiento por tema</h2>
+        <p className="m-0 text-sm text-[#5f7287]">Porcentaje de aciertos por bloque temático según los datos ya registrados.</p>
+      </div>
+
+      {topics.length > 0 ? (
+        <div className="overflow-x-auto">
+          <div className="grid min-w-[640px] grid-cols-[auto_1fr] gap-4">
+          <div className="grid h-72 grid-rows-5 text-xs text-[#7a8ca0]">
+              {[100, 75, 50, 25, 0].map((tick) => (
+                <span key={tick}>{tick}%</span>
+              ))}
+            </div>
+            <div className="relative grid h-72 grid-cols-[repeat(auto-fit,minmax(72px,1fr))] items-end gap-4 border-l border-b border-[#e6edf5] px-4 pb-2">
+              {[25, 50, 75, 100].map((tick) => (
+                <div key={tick} className="absolute inset-x-0 border-t border-dashed border-[#edf2f7]" style={{ bottom: `${tick}%` }} />
+              ))}
+              {topics.map((topic) => (
+                <div key={topic.topic_id} className="grid h-full grid-rows-[1fr_auto] items-end gap-3">
+                  <div className="flex h-full items-end justify-center">
+                    <div
+                      aria-label={`${topic.topic_name ?? `Tema ${topic.topic_id}`}: ${formatPercentage(topic.accuracy_pct)}`}
+                      className="w-full rounded-t-[18px] bg-[linear-gradient(180deg,#7aa8ff_0%,#2453d0_100%)] shadow-[0_18px_26px_-22px_rgba(36,83,208,0.9)]"
+                      style={{ height: `${Math.max(topic.accuracy_pct, topic.accuracy_pct > 0 ? 8 : 0)}%` }}
+                    />
+                  </div>
+                  <div className="grid gap-1 text-center">
+                    <strong className="text-sm text-[#1E3A5F]">{Math.round(topic.accuracy_pct)}%</strong>
+                    <span className="origin-top text-xs leading-tight text-[#5f7287] [writing-mode:vertical-rl] rotate-180 xl:[writing-mode:horizontal-tb] xl:rotate-0">
+                      {topic.topic_name ?? `Tema ${topic.topic_id}`}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <InlineMessage message="Todavía no hay temas suficientes con actividad para comparar porcentajes." />
+      )}
+    </Card>
+  )
+}
+
+function WeeklyActivityCard({ items }: { items: WeeklyActivityItem[] }) {
+  const maxTests = Math.max(...items.map((item) => item.tests), 0)
+
+  return (
+    <Card as="section" className="grid gap-5 p-6 md:p-7">
+      <div className="grid gap-1">
+        <h2 className="m-0 text-2xl text-[#1E3A5F]">Actividad semanal</h2>
+        <p className="m-0 text-sm text-[#5f7287]">Tests realizados por día durante la última ventana semanal disponible.</p>
+      </div>
+
+      {items.length > 0 ? (
+        <div className="grid min-h-64 grid-cols-[repeat(auto-fit,minmax(70px,1fr))] items-end gap-4">
+          {items.map((item) => (
+            <div key={item.date} className="grid gap-3 text-center">
+              <div className="flex h-44 items-end justify-center rounded-[20px] bg-[#f6f9fc] px-3 py-4">
+                <div
+                  aria-label={`${formatWeekDay(item.date)}: ${item.tests} tests`}
+                  className="w-full rounded-[16px] bg-[linear-gradient(180deg,#83d0ff_0%,#2C5F8A_100%)] shadow-[0_16px_28px_-22px_rgba(44,95,138,0.9)]"
+                  style={{ height: `${maxTests === 0 ? 0 : Math.max((item.tests / maxTests) * 100, item.tests > 0 ? 10 : 0)}%` }}
+                />
+              </div>
+              <div className="grid gap-1">
+                <strong className="text-lg text-[#1E3A5F]">{item.tests}</strong>
+                <span className="text-xs uppercase tracking-[0.12em] text-[#7a8ca0]">{formatWeekDay(item.date)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <InlineMessage message="Aún no hay actividad suficiente para resumir la semana." />
+      )}
+    </Card>
+  )
+}
+
+function InsightCard({
+  title,
+  description,
+  icon,
+  variant,
+}: {
+  title: string
+  description: string
+  icon: ReactNode
+  variant: 'strong' | 'improve' | 'trend'
+}) {
+  return (
+    <article
+      className={clsx(
+        'rounded-[24px] p-5 text-white shadow-[0_24px_40px_-30px_rgba(30,58,95,0.55)]',
+        variant === 'strong' && 'bg-[linear-gradient(135deg,#1f7a5a_0%,#4bbf8a_100%)]',
+        variant === 'improve' && 'bg-[linear-gradient(135deg,#f2a23f_0%,#ef6b5a_100%)]',
+        variant === 'trend' && 'bg-[linear-gradient(135deg,#1E3A5F_0%,#2453d0_100%)]',
+      )}
+    >
+      <div className="mb-4 inline-flex rounded-full bg-white/15 p-2.5">{icon}</div>
+      <h2 className="m-0 text-xl">{title}</h2>
+      <p className="mb-0 mt-3 text-sm leading-6 text-white/88">{description}</p>
+    </article>
+  )
+}
+
+function InlineMessage({ message }: { message: string }) {
+  return <p className="m-0 rounded-[20px] bg-[#f6f9fc] p-4 text-sm text-[#5f7287]">{message}</p>
+}
+
+function LegendItem({ color, label }: { color: string; label: string }) {
+  return (
+    <span className="inline-flex items-center gap-2">
+      <span className="size-3 rounded-full" style={{ backgroundColor: color }} />
+      {label}
+    </span>
+  )
+}
+
+type TrendSeriesItem = {
+  period: string
+  accuracy_pct: number
+  pass_rate_pct: number
+}
+
+function buildTrendSeries(trend: StatsTrendItem[], history: StatsHistoryItem[]): TrendSeriesItem[] {
+  if (trend.length === 0) {
+    return []
+  }
+
+  const passRateByPeriod = new Map<string, { passed: number; total: number }>()
+
+  history.forEach((item) => {
+    const period = item.created_at.slice(0, 10)
+    const current = passRateByPeriod.get(period) ?? { passed: 0, total: 0 }
+    passRateByPeriod.set(period, {
+      passed: current.passed + (item.passed ? 1 : 0),
+      total: current.total + 1,
+    })
+  })
+
+  return trend.map((item) => {
+    const passRate = passRateByPeriod.get(item.period)
+    return {
+      period: item.period,
+      accuracy_pct: item.accuracy_pct,
+      pass_rate_pct:
+        item.pass_rate_pct ?? (passRate && passRate.total > 0 ? Number(((passRate.passed / passRate.total) * 100).toFixed(2)) : 0),
+    }
+  })
+}
+
+function buildPeriodLabel(trend: StatsTrendItem[], weeklyActivity: WeeklyActivityItem[]) {
+  const firstPeriod = trend[0]?.period ?? weeklyActivity[0]?.date
+  const lastPeriod = trend[trend.length - 1]?.period ?? weeklyActivity[weeklyActivity.length - 1]?.date
+
+  if (!firstPeriod || !lastPeriod) {
+    return 'Sin datos temporales suficientes todavía.'
+  }
+
+  return `Datos del ${formatLongDate(firstPeriod)} al ${formatLongDate(lastPeriod)}`
+}
+
+function inferStrongestTopic(topics: StatsByTopic[]): TopicInsight | null {
+  if (topics.length === 0) {
+    return null
+  }
+
+  const best = [...topics].sort((left, right) => right.accuracy_pct - left.accuracy_pct)[0]
+  return mapTopicToInsight(best)
+}
+
+function inferImprovementArea(topics: StatsByTopic[]): TopicInsight | null {
+  if (topics.length === 0) {
+    return null
+  }
+
+  const weakest = [...topics].sort((left, right) => left.accuracy_pct - right.accuracy_pct)[0]
+  return mapTopicToInsight(weakest)
+}
+
+function mapTopicToInsight(topic: StatsByTopic): TopicInsight {
+  return {
+    topic_id: topic.topic_id,
+    topic_name: topic.topic_name,
+    correct: topic.correct,
+    wrong: topic.wrong,
+    accuracy_pct: topic.accuracy_pct,
+  }
+}
+
+function inferTrendInsight(trend: StatsTrendItem[]): AccuracyTrendInsight {
+  if (trend.length < 2) {
+    return {
+      window_days: Math.max(trend.length, 1),
+      recent_accuracy_pct: trend.at(-1)?.accuracy_pct ?? 0,
+      previous_accuracy_pct: trend.at(-2)?.accuracy_pct ?? 0,
+      change_pct_points: 0,
+      direction: 'stable',
+    }
+  }
+
+  const recent = trend.at(-1)?.accuracy_pct ?? 0
+  const previous = trend.at(-2)?.accuracy_pct ?? 0
+  const change = Number((recent - previous).toFixed(2))
+
+  return {
+    window_days: 2,
+    recent_accuracy_pct: recent,
+    previous_accuracy_pct: previous,
+    change_pct_points: change,
+    direction: change > 0 ? 'up' : change < 0 ? 'down' : 'stable',
+  }
+}
+
+function buildStrongestTopicCopy(topic: TopicInsight | null) {
+  if (!topic) {
+    return 'Todavía no hay volumen suficiente para identificar un tema claramente fuerte.'
+  }
+
+  return `${topic.topic_name ?? `Tema ${topic.topic_id}`} destaca con ${formatPercentage(topic.accuracy_pct)} de aciertos y un balance de ${topic.correct} correctas frente a ${topic.wrong} falladas.`
+}
+
+function buildImprovementCopy(topic: TopicInsight | null) {
+  if (!topic) {
+    return 'Aún no hay datos comparables para señalar una zona de mejora concreta.'
+  }
+
+  return `${topic.topic_name ?? `Tema ${topic.topic_id}`} es el bloque que más conviene repasar: ${formatPercentage(topic.accuracy_pct)} de aciertos y ${topic.wrong} errores acumulados.`
+}
+
+function buildTrendCopy(trend: AccuracyTrendInsight) {
+  if (trend.direction === 'up') {
+    return `En los últimos ${trend.window_days} días tu precisión ha subido ${formatPercentage(Math.abs(trend.change_pct_points))} respecto al periodo anterior.`
+  }
+
+  if (trend.direction === 'down') {
+    return `En los últimos ${trend.window_days} días tu precisión ha bajado ${formatPercentage(Math.abs(trend.change_pct_points))}. Conviene revisar los temas con peor porcentaje.`
+  }
+
+  return `Tu precisión se mantiene estable en la ventana reciente de ${trend.window_days} días, sin cambios relevantes frente al periodo anterior.`
+}
+
+function buildPolylinePath(points: Array<{ x: number; y: number }>) {
+  return points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ')
+}
+
+function formatPercentage(value: number) {
+  return `${new Intl.NumberFormat('es-ES', { maximumFractionDigits: 1 }).format(value)}%`
+}
+
+function formatLongDate(value: string) {
+  return longDateFormatter.format(new Date(value))
+}
+
+function formatWeekDay(value: string) {
+  const label = weekDayFormatter.format(new Date(value))
+  return label.endsWith('.') ? label.slice(0, -1) : label
+}
+
+function formatChartDay(value: string) {
+  return shortDateFormatter.format(new Date(value))
+}
+
+function clamp(value: number) {
+  return Math.max(0, Math.min(value, 100))
+}

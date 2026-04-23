@@ -100,7 +100,8 @@ class FakeStatsRepository(StatsRepository):
     def get_by_topic(self, *, user_id: str, permit_id: Optional[int] = None) -> List[dict]:
         self.last_kwargs["by_topic"] = {"user_id": user_id, "permit_id": permit_id}
         return [
-            {"topic_id": 1, "correct": 3, "wrong": 2, "accuracy_pct": 60.0},
+            {"topic_id": 1, "topic_name": "Normas", "correct": 3, "wrong": 2, "accuracy_pct": 60.0},
+            {"topic_id": 2, "topic_name": "Señales", "correct": 9, "wrong": 1, "accuracy_pct": 90.0},
         ]
 
     def get_history(
@@ -128,12 +129,17 @@ class FakeStatsRepository(StatsRepository):
                 "accuracy_pct": 90.0,
                 "permit_code": "B",
                 "topic_id": None,
+                "test_type": "PERMIT",
             }
         ]
 
     def get_trend(self, *, user_id: str, permit_id: Optional[int] = None) -> List[dict]:
         self.last_kwargs["trend"] = {"user_id": user_id, "permit_id": permit_id}
-        return [{"period": "2026-01", "tests": 2, "accuracy_pct": 66.67}]
+        return [
+            {"period": "2026-01-06", "tests": 1, "accuracy_pct": 50.0},
+            {"period": "2026-01-08", "tests": 1, "accuracy_pct": 70.0},
+            {"period": "2026-01-11", "tests": 1, "accuracy_pct": 90.0},
+        ]
 
     def get_failed_distribution(self, *, user_id: str, permit_id: Optional[int] = None) -> List[dict]:
         self.last_kwargs["failed_distribution"] = {"user_id": user_id, "permit_id": permit_id}
@@ -148,6 +154,35 @@ class FakeStatsRepository(StatsRepository):
             datetime(2026, 1, 8).date(),
             datetime(2026, 1, 7).date(),
         ]
+
+    def get_test_type_distribution(self, *, user_id: str, permit_id: Optional[int] = None) -> List[dict]:
+        self.last_kwargs["test_type_distribution"] = {"user_id": user_id, "permit_id": permit_id}
+        return [
+            {"test_type": "PERMIT", "tests": 2, "percentage": 66.67},
+            {"test_type": "FAILED", "tests": 1, "percentage": 33.33},
+        ]
+
+    def get_daily_activity(self, *, user_id: str, permit_id: Optional[int] = None) -> List[dict]:
+        self.last_kwargs["daily_activity"] = {"user_id": user_id, "permit_id": permit_id}
+        return [
+            {"date": "2026-01-06", "tests": 1},
+            {"date": "2026-01-08", "tests": 2},
+            {"date": "2026-01-11", "tests": 1},
+            {"date": "2026-01-12", "tests": 3},
+        ]
+
+    def get_accuracy_comparison(self, *, user_id: str, permit_id: Optional[int] = None, window_days: int = 7) -> dict:
+        self.last_kwargs["accuracy_comparison"] = {
+            "user_id": user_id,
+            "permit_id": permit_id,
+            "window_days": window_days,
+        }
+        return {
+            "window_days": window_days,
+            "recent_accuracy_pct": 78.0,
+            "previous_accuracy_pct": 65.0,
+            "change_pct_points": 13.0,
+        }
 
 
 @pytest.fixture
@@ -451,15 +486,33 @@ def test_get_stats_assembles_all_sections_and_resolves_permit(test_manager_with_
     assert stats.goal.target_accuracy_pct == 90.0
     assert stats.goal.current_accuracy_pct == 66.67
     assert stats.goal.progress_pct == 74.08
-    assert len(stats.by_topic) == 1
+    assert len(stats.by_topic) == 2
+    assert stats.by_topic[0].topic_name == "Normas"
     assert len(stats.history) == 1
-    assert len(stats.trend) == 1
+    assert stats.history[0].test_type == "PERMIT"
+    assert len(stats.trend) == 3
+    assert stats.trend[0].period == "2026-01-06"
     assert len(stats.failed_distribution) == 1
+    assert len(stats.test_type_distribution) == 2
+    assert stats.test_type_distribution[0].test_type == "PERMIT"
+    assert len(stats.weekly_activity) == 7
+    assert stats.weekly_activity[0].date == "2026-01-06"
+    assert stats.weekly_activity[1].tests == 0
+    assert stats.weekly_activity[-1].date == "2026-01-12"
+    assert stats.weekly_activity[-1].tests == 3
+    assert stats.insights.strongest_topic.topic_name == "Señales"
+    assert stats.insights.improvement_area.topic_name == "Normas"
+    assert stats.insights.trend.window_days == 7
+    assert stats.insights.trend.change_pct_points == 13.0
+    assert stats.insights.trend.direction == "up"
 
     stats_repo = test_manager_with_stats.stats_repo
     assert stats_repo.last_kwargs["summary"] == {"user_id": "42", "permit_id": 1}
     assert stats_repo.last_kwargs["history"] == {"user_id": "42", "permit_id": 1, "limit": 5, "offset": 10}
     assert stats_repo.last_kwargs["activity_dates"] == {"user_id": "42", "permit_id": 1}
+    assert stats_repo.last_kwargs["test_type_distribution"] == {"user_id": "42", "permit_id": 1}
+    assert stats_repo.last_kwargs["daily_activity"] == {"user_id": "42", "permit_id": 1}
+    assert stats_repo.last_kwargs["accuracy_comparison"] == {"user_id": "42", "permit_id": 1, "window_days": 7}
 
 
 def test_get_stats_caps_goal_progress_and_handles_empty_accuracy(test_manager_with_stats: TestManager):
@@ -481,8 +534,21 @@ def test_get_stats_caps_goal_progress_and_handles_empty_accuracy(test_manager_wi
     def no_activity(*, user_id: str, permit_id: Optional[int] = None) -> List[datetime.date]:
         return []
 
+    def no_topics(*, user_id: str, permit_id: Optional[int] = None) -> List[dict]:
+        return []
+
+    def no_accuracy_comparison(*, user_id: str, permit_id: Optional[int] = None, window_days: int = 7) -> dict:
+        return {
+            "window_days": window_days,
+            "recent_accuracy_pct": 0.0,
+            "previous_accuracy_pct": 0.0,
+            "change_pct_points": 0.0,
+        }
+
     stats_repo.get_summary = zero_summary
     stats_repo.get_activity_dates = no_activity
+    stats_repo.get_by_topic = no_topics
+    stats_repo.get_accuracy_comparison = no_accuracy_comparison
 
     stats = test_manager_with_stats.get_stats(user_id="42")
 
@@ -494,6 +560,10 @@ def test_get_stats_caps_goal_progress_and_handles_empty_accuracy(test_manager_wi
     assert stats.summary.total_time_seconds == 0
     assert stats.goal.current_accuracy_pct == 0.0
     assert stats.goal.progress_pct == 0.0
+    assert stats.insights.strongest_topic is None
+    assert stats.insights.improvement_area is None
+    assert stats.insights.trend.direction == "stable"
+    assert stats.insights.trend.change_pct_points == 0.0
 
 
 def test_get_stats_caps_goal_progress_at_one_hundred(test_manager_with_stats: TestManager):

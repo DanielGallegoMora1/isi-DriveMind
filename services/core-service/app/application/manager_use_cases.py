@@ -17,6 +17,11 @@ from app.presentation.schemas import (
     StatsHistoryItem,
     StatsTrendItem,
     FailedDistributionItem,
+    TestTypeDistributionItem,
+    WeeklyActivityItem,
+    StatsInsights,
+    TopicInsight,
+    AccuracyTrendInsight,
 )
 
 class TestManager:
@@ -63,6 +68,95 @@ class TestManager:
             current_streak = 1
 
         return best_streak
+
+    @staticmethod
+    def _build_topic_insight(item: dict) -> TopicInsight:
+        return TopicInsight(
+            topic_id=int(item["topic_id"]),
+            topic_name=item.get("topic_name"),
+            correct=int(item.get("correct", 0) or 0),
+            wrong=int(item.get("wrong", 0) or 0),
+            accuracy_pct=float(item.get("accuracy_pct", 0.0) or 0.0),
+        )
+
+    @classmethod
+    def _build_topic_insights(cls, by_topic_data: list[dict]) -> tuple[TopicInsight | None, TopicInsight | None]:
+        if not by_topic_data:
+            return None, None
+
+        def total_answers(item: dict) -> int:
+            return int(item.get("correct", 0) or 0) + int(item.get("wrong", 0) or 0)
+
+        strongest = max(
+            by_topic_data,
+            key=lambda item: (
+                float(item.get("accuracy_pct", 0.0) or 0.0),
+                total_answers(item),
+                -int(item["topic_id"]),
+            ),
+        )
+        improvement_area = min(
+            by_topic_data,
+            key=lambda item: (
+                float(item.get("accuracy_pct", 0.0) or 0.0),
+                -total_answers(item),
+                int(item["topic_id"]),
+            ),
+        )
+        return cls._build_topic_insight(strongest), cls._build_topic_insight(improvement_area)
+
+    @staticmethod
+    def _build_accuracy_trend_insight(comparison_data: dict | None) -> AccuracyTrendInsight:
+        data = comparison_data or {}
+        change_pct_points = round(float(data.get("change_pct_points", 0.0) or 0.0), 2)
+        direction = "stable"
+        if change_pct_points > 0:
+            direction = "up"
+        elif change_pct_points < 0:
+            direction = "down"
+
+        return AccuracyTrendInsight(
+            window_days=int(data.get("window_days", 7) or 7),
+            recent_accuracy_pct=round(float(data.get("recent_accuracy_pct", 0.0) or 0.0), 2),
+            previous_accuracy_pct=round(float(data.get("previous_accuracy_pct", 0.0) or 0.0), 2),
+            change_pct_points=change_pct_points,
+            direction=direction,
+        )
+
+    @staticmethod
+    def _build_weekly_activity(daily_activity_data: list[dict]) -> list[dict]:
+        if not daily_activity_data:
+            return []
+
+        counts_by_date: dict[date, int] = {}
+        parsed_dates: list[date] = []
+        for item in daily_activity_data:
+            activity_date = item.get("date")
+            if isinstance(activity_date, str):
+                parsed_date = date.fromisoformat(activity_date)
+            elif isinstance(activity_date, date):
+                parsed_date = activity_date
+            else:
+                continue
+            parsed_dates.append(parsed_date)
+            counts_by_date[parsed_date] = int(item.get("tests", 0) or 0)
+
+        if not parsed_dates:
+            return []
+
+        end_date = max(parsed_dates)
+        start_date = end_date - timedelta(days=6)
+        weekly_activity: list[dict] = []
+        current_date = start_date
+        while current_date <= end_date:
+            weekly_activity.append(
+                {
+                    "date": current_date.isoformat(),
+                    "tests": counts_by_date.get(current_date, 0),
+                }
+            )
+            current_date += timedelta(days=1)
+        return weekly_activity
 
     def generate_test(self, user_id: str, request: TestGenerateRequest) -> Test:
         permit = self.question_repo.get_permit_by_code(request.permit_code)
@@ -225,6 +319,9 @@ class TestManager:
         trend_data = self.stats_repo.get_trend(user_id=user_id, permit_id=permit_id)
         failed_distribution_data = self.stats_repo.get_failed_distribution(user_id=user_id, permit_id=permit_id)
         activity_dates = self.stats_repo.get_activity_dates(user_id=user_id, permit_id=permit_id)
+        test_type_distribution_data = self.stats_repo.get_test_type_distribution(user_id=user_id, permit_id=permit_id)
+        weekly_activity_data = self.stats_repo.get_daily_activity(user_id=user_id, permit_id=permit_id)
+        accuracy_comparison_data = self.stats_repo.get_accuracy_comparison(user_id=user_id, permit_id=permit_id, window_days=7)
 
         current_accuracy_pct = float(summary_data.get("accuracy_pct", 0.0) or 0.0)
         target_accuracy_pct = float(settings.stats_target_accuracy_pct)
@@ -243,6 +340,8 @@ class TestManager:
             "total_time_seconds": int(summary_data.get("total_time_seconds", 0) or 0),
         }
 
+        strongest_topic, improvement_area = self._build_topic_insights(by_topic_data)
+
         return StatsResponse(
             summary=StatsSummary(**summary_payload),
             goal=StatsGoal(
@@ -254,4 +353,11 @@ class TestManager:
             history=[StatsHistoryItem(**item) for item in history_data],
             trend=[StatsTrendItem(**item) for item in trend_data],
             failed_distribution=[FailedDistributionItem(**item) for item in failed_distribution_data],
+            test_type_distribution=[TestTypeDistributionItem(**item) for item in test_type_distribution_data],
+            weekly_activity=[WeeklyActivityItem(**item) for item in self._build_weekly_activity(weekly_activity_data)],
+            insights=StatsInsights(
+                strongest_topic=strongest_topic,
+                improvement_area=improvement_area,
+                trend=self._build_accuracy_trend_insight(accuracy_comparison_data),
+            ),
         )

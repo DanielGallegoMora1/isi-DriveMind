@@ -1,5 +1,8 @@
-import { EmptyState } from '../components/ui/empty-state'
+import { useAuth } from '../features/auth'
+import { StatsAnalyticsDashboard } from '../features/stats'
 
 export function StatsPage() {
-  return <EmptyState description="Esta sección estará disponible más adelante." title="Próximamente" />
+  const { accessToken } = useAuth()
+
+  return <StatsAnalyticsDashboard accessToken={accessToken} />
 }

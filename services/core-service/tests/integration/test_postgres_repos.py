@@ -393,17 +393,37 @@ def test_stats_repo_returns_real_sections(db_session):
     by_topic = repo.get_by_topic(user_id="501", permit_id=permit.id)
     assert len(by_topic) == 2
     assert by_topic[0]["topic_id"] == topic_1.id
+    assert by_topic[0]["topic_name"] == "Normas"
 
     history = repo.get_history(user_id="501", permit_id=permit.id, limit=10, offset=0)
     assert len(history) == 2
     assert history[0]["permit_code"] == "C"
+    assert history[0]["test_type"] == "PERMIT"
 
     trend = repo.get_trend(user_id="501", permit_id=permit.id)
-    assert len(trend) == 1
-    assert trend[0]["tests"] == 2
+    assert len(trend) == 2
+    assert trend[0] == {"period": "2026-01-10", "tests": 1, "accuracy_pct": 100.0}
+    assert trend[1] == {"period": "2026-01-11", "tests": 1, "accuracy_pct": 20.0}
 
     failed_distribution = repo.get_failed_distribution(user_id="501", permit_id=permit.id)
-    assert failed_distribution == [{"topic_id": topic_2.id, "wrong_count": 1}]
+    assert failed_distribution == [{"topic_id": topic_2.id, "topic_name": "Seguridad", "wrong_count": 1}]
+
+    test_type_distribution = repo.get_test_type_distribution(user_id="501", permit_id=permit.id)
+    assert test_type_distribution == [{"test_type": "PERMIT", "tests": 2, "percentage": 100.0}]
+
+    daily_activity = repo.get_daily_activity(user_id="501", permit_id=permit.id)
+    assert daily_activity == [
+        {"date": "2026-01-10", "tests": 1},
+        {"date": "2026-01-11", "tests": 1},
+    ]
+
+    accuracy_comparison = repo.get_accuracy_comparison(user_id="501", permit_id=permit.id, window_days=1)
+    assert accuracy_comparison == {
+        "window_days": 1,
+        "recent_accuracy_pct": 20.0,
+        "previous_accuracy_pct": 100.0,
+        "change_pct_points": -80.0,
+    }
 
 
 def test_stats_repo_summary_handles_zero_attempts(db_session):
