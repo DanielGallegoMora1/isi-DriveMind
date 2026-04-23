@@ -98,6 +98,8 @@ class AnswerItem(BaseModel):
 
 class TestSubmitRequest(BaseModel):
     answers: List[AnswerItem]
+    started_at: Optional[datetime] = None
+    duration_seconds: Optional[int] = Field(default=None, ge=0)
 
 class TopicStat(BaseModel):
     topic_id: int
@@ -129,7 +131,12 @@ class StatsSummary(BaseModel):
     failed_tests: int
     accuracy_pct: float
     pass_rate_pct: float
+    average_score: float
     current_streak_days: int
+    best_streak_days: int
+    last_activity_at: Optional[datetime] = None
+    average_time_seconds: float
+    total_time_seconds: int
 
 
 class StatsGoal(BaseModel):

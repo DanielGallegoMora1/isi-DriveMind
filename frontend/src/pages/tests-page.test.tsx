@@ -4,18 +4,39 @@ import { TestsPage } from './tests-page'
 import { renderWithProviders } from '../test/utils'
 
 describe('TestsPage', () => {
-  it('renderiza el flujo real de selección de test desde la ruta de tests', () => {
-    renderWithProviders(<TestsPage />)
-
-    expect(screen.getByRole('button', { name: /volver al dashboard/i })).toBeInTheDocument()
-    expect(screen.getByText('Selecciona el permiso')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /comenzar permiso b - turismos/i })).toBeInTheDocument()
-  })
-
-  it('permite generar, responder y enviar un test real contra la api mockeada', async () => {
+  it('muestra el panel Mis Tests con métricas, CTA e historial filtrable', async () => {
     const user = userEvent.setup()
 
     renderWithProviders(<TestsPage />)
+
+    expect(await screen.findByRole('heading', { name: 'Mis Tests' })).toBeInTheDocument()
+    expect(screen.getByText('Mis tests')).toBeInTheDocument()
+    expect(screen.getByText('Tests realizados')).toBeInTheDocument()
+    expect(screen.getByText('Tiempo medio')).toBeInTheDocument()
+    expect(screen.getByText('82,4/100')).toBeInTheDocument()
+    expect(screen.getByText('Historial completo')).toBeInTheDocument()
+    expect(screen.getByLabelText('Número de tests del historial')).toHaveTextContent('3 Tests')
+    expect(screen.getAllByRole('button', { name: /^realizar test$/i }).length).toBeGreaterThan(0)
+    expect(screen.getByRole('cell', { name: /87 puntos · 86,7% de acierto/i })).toBeInTheDocument()
+    expect(screen.getByText('Suspenso')).toBeInTheDocument()
+    expect(screen.queryByText('Por revisar')).not.toBeInTheDocument()
+    expect(screen.getAllByRole('cell', { name: /no disponible/i }).length).toBeGreaterThan(0)
+
+    await user.selectOptions(screen.getByLabelText(/filtrar historial por estado/i), 'passed')
+
+    expect(screen.getByText(/id 77/i)).toBeInTheDocument()
+    expect(screen.queryByText(/id 78/i)).not.toBeInTheDocument()
+  })
+
+  it('permite iniciar el flujo existente desde el CTA y completar un test real', async () => {
+    const user = userEvent.setup()
+
+    renderWithProviders(<TestsPage />)
+
+    await user.click((await screen.findAllByRole('button', { name: /^realizar test$/i }))[0])
+
+    expect(screen.getByRole('button', { name: /volver a mis tests/i })).toBeInTheDocument()
+    expect(screen.getByText('Selecciona el permiso')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /comenzar permiso b - turismos/i }))
     await user.click(screen.getByRole('button', { name: /test aleatorio/i }))
@@ -54,6 +75,7 @@ describe('TestsPage', () => {
 
     renderWithProviders(<TestsPage />)
 
+    await user.click((await screen.findAllByRole('button', { name: /^realizar test$/i }))[0])
     await user.click(screen.getByRole('button', { name: /comenzar permiso b - turismos/i }))
     await user.click(screen.getByRole('button', { name: /test aleatorio/i }))
 

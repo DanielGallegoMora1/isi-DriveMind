@@ -91,6 +91,10 @@ class FakeStatsRepository(StatsRepository):
             "failed_tests": 1,
             "accuracy_pct": 66.67,
             "pass_rate_pct": 50.0,
+            "average_score": 55.5,
+            "last_activity_at": datetime(2026, 1, 12, 9, 30),
+            "average_time_seconds": 150.0,
+            "total_time_seconds": 300,
         }
 
     def get_by_topic(self, *, user_id: str, permit_id: Optional[int] = None) -> List[dict]:
@@ -140,8 +144,9 @@ class FakeStatsRepository(StatsRepository):
         return [
             datetime(2026, 1, 12).date(),
             datetime(2026, 1, 11).date(),
-            datetime(2026, 1, 10).date(),
+            datetime(2026, 1, 9).date(),
             datetime(2026, 1, 8).date(),
+            datetime(2026, 1, 7).date(),
         ]
 
 
@@ -316,6 +321,84 @@ def test_submit_test_keeps_unanswered_questions_out_of_wrong_count_and_review_da
     assert len(test_repo.saved_attempt_answers) == 10
 
 
+def test_submit_test_uses_test_created_at_as_default_started_at(test_manager: TestManager, monkeypatch: pytest.MonkeyPatch):
+    fixed_finish = datetime(2026, 1, 12, 12, 0, 0)
+
+    class FixedDateTime:
+        @staticmethod
+        def now():
+            return fixed_finish
+
+    monkeypatch.setattr("app.application.manager_use_cases.datetime", FixedDateTime)
+
+    request = TestGenerateRequest(permit_code="B", mode="RANDOM", count=30)
+    test = test_manager.generate_test(user_id="10", request=request)
+    test.created_at = datetime(2026, 1, 12, 11, 45, 0)
+
+    result = test_manager.submit_test(
+        user_id="10",
+        test_id=test.id,
+        request=TestSubmitRequest(answers=[AnswerItem(question_id=i, selected_label="a") for i in range(1, 31)]),
+    )
+
+    assert result.score == 100
+    saved_attempt = next(iter(test_manager.test_repo.attempts.values()))
+    assert saved_attempt.started_at == datetime(2026, 1, 12, 11, 45, 0)
+    assert saved_attempt.finished_at == fixed_finish
+
+
+def test_submit_test_uses_duration_seconds_when_provided(test_manager: TestManager, monkeypatch: pytest.MonkeyPatch):
+    fixed_finish = datetime(2026, 1, 12, 12, 0, 0)
+
+    class FixedDateTime:
+        @staticmethod
+        def now():
+            return fixed_finish
+
+    monkeypatch.setattr("app.application.manager_use_cases.datetime", FixedDateTime)
+
+    request = TestGenerateRequest(permit_code="B", mode="RANDOM", count=30)
+    test = test_manager.generate_test(user_id="10", request=request)
+    test.created_at = datetime(2026, 1, 12, 10, 0, 0)
+
+    test_manager.submit_test(
+        user_id="10",
+        test_id=test.id,
+        request=TestSubmitRequest(
+            answers=[AnswerItem(question_id=i, selected_label="a") for i in range(1, 31)],
+            duration_seconds=120,
+        ),
+    )
+
+    saved_attempt = next(iter(test_manager.test_repo.attempts.values()))
+    assert saved_attempt.started_at == datetime(2026, 1, 12, 11, 58, 0)
+    assert saved_attempt.finished_at == fixed_finish
+
+
+def test_submit_test_rejects_started_at_after_finish(test_manager: TestManager, monkeypatch: pytest.MonkeyPatch):
+    fixed_finish = datetime(2026, 1, 12, 12, 0, 0)
+
+    class FixedDateTime:
+        @staticmethod
+        def now():
+            return fixed_finish
+
+    monkeypatch.setattr("app.application.manager_use_cases.datetime", FixedDateTime)
+
+    request = TestGenerateRequest(permit_code="B", mode="RANDOM", count=30)
+    test = test_manager.generate_test(user_id="10", request=request)
+
+    with pytest.raises(ValueError, match="invalid_started_at"):
+        test_manager.submit_test(
+            user_id="10",
+            test_id=test.id,
+            request=TestSubmitRequest(
+                answers=[AnswerItem(question_id=i, selected_label="a") for i in range(1, 31)],
+                started_at=datetime(2026, 1, 12, 12, 1, 0),
+            ),
+        )
+
+
 def test_submit_test_accepts_empty_answer_submission(test_manager: TestManager):
     request = TestGenerateRequest(permit_code="B", mode="RANDOM", count=30)
     test = test_manager.generate_test(user_id="10", request=request)
@@ -359,7 +442,12 @@ def test_get_stats_assembles_all_sections_and_resolves_permit(test_manager_with_
 
     assert stats.summary.total_tests == 2
     assert stats.summary.pass_rate_pct == 50.0
-    assert stats.summary.current_streak_days == 3
+    assert stats.summary.average_score == 55.5
+    assert stats.summary.current_streak_days == 2
+    assert stats.summary.best_streak_days == 3
+    assert stats.summary.last_activity_at == datetime(2026, 1, 12, 9, 30)
+    assert stats.summary.average_time_seconds == 150.0
+    assert stats.summary.total_time_seconds == 300
     assert stats.goal.target_accuracy_pct == 90.0
     assert stats.goal.current_accuracy_pct == 66.67
     assert stats.goal.progress_pct == 74.08
@@ -384,6 +472,10 @@ def test_get_stats_caps_goal_progress_and_handles_empty_accuracy(test_manager_wi
             "failed_tests": 0,
             "accuracy_pct": 0.0,
             "pass_rate_pct": 0.0,
+            "average_score": 0.0,
+            "last_activity_at": None,
+            "average_time_seconds": 0.0,
+            "total_time_seconds": 0,
         }
 
     def no_activity(*, user_id: str, permit_id: Optional[int] = None) -> List[datetime.date]:
@@ -396,6 +488,10 @@ def test_get_stats_caps_goal_progress_and_handles_empty_accuracy(test_manager_wi
 
     assert stats.summary.pass_rate_pct == 0.0
     assert stats.summary.current_streak_days == 0
+    assert stats.summary.best_streak_days == 0
+    assert stats.summary.last_activity_at is None
+    assert stats.summary.average_time_seconds == 0.0
+    assert stats.summary.total_time_seconds == 0
     assert stats.goal.current_accuracy_pct == 0.0
     assert stats.goal.progress_pct == 0.0
 
@@ -410,6 +506,10 @@ def test_get_stats_caps_goal_progress_at_one_hundred(test_manager_with_stats: Te
             "failed_tests": 0,
             "accuracy_pct": 96.0,
             "pass_rate_pct": 100.0,
+            "average_score": 96.0,
+            "last_activity_at": datetime(2026, 1, 12, 9, 30),
+            "average_time_seconds": 100.0,
+            "total_time_seconds": 400,
         }
 
     stats_repo.get_summary = high_accuracy_summary

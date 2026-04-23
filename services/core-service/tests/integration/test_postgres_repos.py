@@ -343,20 +343,22 @@ def test_stats_repo_returns_real_sections(db_session):
     attempt_1 = AttemptModel(
         test_id=test_model.id,
         user_id="501",
+        started_at=datetime(2026, 1, 10, 10, 0, 0),
+        finished_at=datetime(2026, 1, 10, 10, 2, 0),
         total_questions=2,
         correct_count=2,
         wrong_count=0,
         score=100,
-        finished_at=datetime.utcnow(),
     )
     attempt_2 = AttemptModel(
         test_id=test_model.id,
         user_id="501",
+        started_at=datetime(2026, 1, 11, 12, 0, 0),
+        finished_at=datetime(2026, 1, 11, 12, 3, 0),
         total_questions=5,
         correct_count=1,
         wrong_count=4,
         score=20,
-        finished_at=datetime.utcnow(),
     )
     db_session.add_all([attempt_1, attempt_2])
     db_session.flush()
@@ -379,10 +381,13 @@ def test_stats_repo_returns_real_sections(db_session):
     assert summary["failed_tests"] == 1
     assert summary["accuracy_pct"] == 42.86
     assert summary["pass_rate_pct"] == 50.0
+    assert summary["average_score"] == 60.0
+    assert summary["last_activity_at"] == datetime(2026, 1, 11, 12, 3, 0)
+    assert summary["average_time_seconds"] == 150.0
+    assert summary["total_time_seconds"] == 300
 
     activity_dates = repo.get_activity_dates(user_id="501", permit_id=permit.id)
-    assert len(activity_dates) == 1
-    assert activity_dates[0] == attempt_1.finished_at.date()
+    assert activity_dates == [attempt_2.finished_at.date(), attempt_1.finished_at.date()]
 
 
     by_topic = repo.get_by_topic(user_id="501", permit_id=permit.id)
@@ -416,7 +421,62 @@ def test_stats_repo_summary_handles_zero_attempts(db_session):
         "failed_tests": 0,
         "accuracy_pct": 0.0,
         "pass_rate_pct": 0.0,
+        "average_score": 0.0,
+        "last_activity_at": None,
+        "average_time_seconds": 0.0,
+        "total_time_seconds": 0,
     }
+
+
+def test_stats_repo_ignores_invalid_negative_durations(db_session):
+    permit = PermitModel(code="I", name="I")
+    db_session.add(permit)
+    db_session.flush()
+
+    topic = TopicModel(permit_id=permit.id, topic_number=1, name="Timing")
+    db_session.add(topic)
+    db_session.flush()
+
+    question = QuestionModel(external_id="QI-1", permit_id=permit.id, topic_id=topic.id, statement="QI", requires_image=False)
+    db_session.add(question)
+    db_session.flush()
+
+    test_model = TestModel(user_id="timing-user", mode="PERMIT", permit_id=permit.id, topic_id=None, num_questions=1)
+    db_session.add(test_model)
+    db_session.flush()
+
+    db_session.add_all(
+        [
+            AttemptModel(
+                test_id=test_model.id,
+                user_id="timing-user",
+                started_at=datetime(2026, 1, 10, 10, 5, 0),
+                finished_at=datetime(2026, 1, 10, 10, 0, 0),
+                total_questions=1,
+                correct_count=1,
+                wrong_count=0,
+                score=100,
+            ),
+            AttemptModel(
+                test_id=test_model.id,
+                user_id="timing-user",
+                started_at=datetime(2026, 1, 10, 11, 0, 0),
+                finished_at=datetime(2026, 1, 10, 11, 2, 0),
+                total_questions=1,
+                correct_count=1,
+                wrong_count=0,
+                score=100,
+            ),
+        ]
+    )
+    db_session.commit()
+
+    repo = PostgresStatsRepository(db_session)
+
+    summary = repo.get_summary(user_id="timing-user", permit_id=permit.id)
+
+    assert summary["average_time_seconds"] == 120.0
+    assert summary["total_time_seconds"] == 120
 
 
 def test_stats_repo_returns_distinct_activity_dates_descending(db_session):

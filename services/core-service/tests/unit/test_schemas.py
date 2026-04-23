@@ -28,3 +28,14 @@ def test_test_submit_request_valid_answers_collection():
     answers = [AnswerItem(question_id=i, selected_label="b") for i in range(1, 13)]
     req = TestSubmitRequest(answers=answers)
     assert len(req.answers) == 12
+
+
+def test_test_submit_request_accepts_optional_timing_fields():
+    req = TestSubmitRequest(
+        answers=[AnswerItem(question_id=1, selected_label="a")],
+        started_at="2026-01-10T10:00:00",
+        duration_seconds=120,
+    )
+
+    assert req.started_at.isoformat() == "2026-01-10T10:00:00"
+    assert req.duration_seconds == 120

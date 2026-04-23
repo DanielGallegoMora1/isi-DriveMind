@@ -1,8 +1,15 @@
 export type StatsSummary = {
   total_tests: number
+  passed_tests: number
+  failed_tests: number
   pass_rate_pct: number
   accuracy_pct: number
+  average_score: number
   current_streak_days: number
+  best_streak_days: number
+  last_activity_at: string | null
+  average_time_seconds: number
+  total_time_seconds: number
 }
 
 export type StatsByTopic = {
@@ -22,6 +29,7 @@ export type StatsHistoryItem = {
   accuracy_pct: number
   permit_code: string | null
   topic_id: number | string | null
+  duration_seconds?: number | null
 }
 
 export type StatsTrendItem = {

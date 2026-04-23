@@ -324,7 +324,7 @@ def test_questions_random_without_filters_returns_items_wrapper():
     assert len(data["items"]) == 2
 
 
-def _generate_and_submit_for_user(sub: str, wrong_first_n: int = 0) -> int:
+def _generate_and_submit_for_user(sub: str, wrong_first_n: int = 0, duration_seconds: int | None = None) -> int:
     headers = _auth_headers(sub=sub, role="student")
     generate_payload = {"permit_code": "B", "mode": "PERMIT"}
     generated = client.post("/api/v1/tests/generate", json=generate_payload, headers=headers)
@@ -336,9 +336,13 @@ def _generate_and_submit_for_user(sub: str, wrong_first_n: int = 0) -> int:
         selected = "a" if idx < wrong_first_n else "b"
         answers.append({"question_id": q["id"], "selected_label": selected})
 
+    submit_payload = {"answers": answers}
+    if duration_seconds is not None:
+        submit_payload["duration_seconds"] = duration_seconds
+
     submitted = client.post(
         f"/api/v1/tests/{test_data['id']}/submit",
-        json={"answers": answers},
+        json=submit_payload,
         headers=headers,
     )
     assert submitted.status_code == 200
@@ -346,7 +350,7 @@ def _generate_and_submit_for_user(sub: str, wrong_first_n: int = 0) -> int:
 
 
 def test_stats_returns_real_sections_for_student():
-    _generate_and_submit_for_user(sub="55", wrong_first_n=4)
+    _generate_and_submit_for_user(sub="55", wrong_first_n=4, duration_seconds=120)
 
     response = client.get("/api/v1/stats", headers=_auth_headers(sub="55", role="student"))
     assert response.status_code == 200
@@ -355,8 +359,18 @@ def test_stats_returns_real_sections_for_student():
     assert payload["summary"]["total_tests"] >= 1
     assert "pass_rate_pct" in payload["summary"]
     assert "current_streak_days" in payload["summary"]
+    assert "average_score" in payload["summary"]
+    assert "best_streak_days" in payload["summary"]
+    assert "last_activity_at" in payload["summary"]
+    assert "average_time_seconds" in payload["summary"]
+    assert "total_time_seconds" in payload["summary"]
     assert payload["summary"]["pass_rate_pct"] == 0.0
     assert payload["summary"]["current_streak_days"] >= 1
+    assert payload["summary"]["average_score"] == 87.0
+    assert payload["summary"]["best_streak_days"] >= 1
+    assert payload["summary"]["last_activity_at"] is not None
+    assert payload["summary"]["average_time_seconds"] == 120.0
+    assert payload["summary"]["total_time_seconds"] == 120
     assert payload["goal"] == {
         "target_accuracy_pct": 90.0,
         "current_accuracy_pct": 86.67,
@@ -408,3 +422,23 @@ def test_stats_admin_can_query_other_student_by_uuid():
     assert response.status_code == 200
     payload = response.json()
     assert payload["summary"]["total_tests"] >= 1
+
+
+def test_submit_test_rejects_future_started_at():
+    headers = _auth_headers(sub="future-user", role="student")
+    generated = client.post("/api/v1/tests/generate", json={"permit_code": "B", "mode": "PERMIT"}, headers=headers)
+    assert generated.status_code == 200
+    test_data = generated.json()
+
+    response = client.post(
+        f"/api/v1/tests/{test_data['id']}/submit",
+        json={
+            "answers": [{"question_id": q["id"], "selected_label": "b"} for q in test_data["questions"]],
+            "started_at": "2999-01-01T00:00:00",
+        },
+        headers=headers,
+    )
+
+    assert response.status_code == 422
+    body = response.json()
+    assert body["detail"] == "invalid_started_at"

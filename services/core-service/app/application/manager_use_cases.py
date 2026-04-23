@@ -46,6 +46,24 @@ class TestManager:
 
         return streak
 
+    @staticmethod
+    def _compute_best_streak_days(activity_dates: list[date]) -> int:
+        if not activity_dates:
+            return 0
+
+        best_streak = 1
+        current_streak = 1
+
+        for previous_date, activity_date in zip(activity_dates, activity_dates[1:]):
+            if previous_date - activity_date == timedelta(days=1):
+                current_streak += 1
+                best_streak = max(best_streak, current_streak)
+                continue
+
+            current_streak = 1
+
+        return best_streak
+
     def generate_test(self, user_id: str, request: TestGenerateRequest) -> Test:
         permit = self.question_repo.get_permit_by_code(request.permit_code)
         if permit is None:
@@ -74,6 +92,17 @@ class TestManager:
         test = self.test_repo.get_test_by_id(test_id)
         if test is None or test.user_id != user_id:
             raise ValueError("test_not_found")
+
+        finished_at = datetime.now()
+        if request.started_at is not None:
+            started_at = request.started_at
+        elif request.duration_seconds is not None:
+            started_at = finished_at - timedelta(seconds=request.duration_seconds)
+        else:
+            started_at = test.created_at
+
+        if started_at > finished_at:
+            raise ValueError("invalid_started_at")
 
         submitted_ids = [ans.question_id for ans in request.answers]
         if len(submitted_ids) != len(set(submitted_ids)):
@@ -146,9 +175,10 @@ class TestManager:
             user_id=user_id,
             correct_count=correct_count,
             wrong_count=wrong_count,
+            started_at=started_at,
             score=round((correct_count / test.num_questions) * 100) if test.num_questions else 0,
             total_questions=test.num_questions,
-            finished_at=datetime.now(),
+            finished_at=finished_at,
         )
 
         self.test_repo.save_attempt_with_answers(attempt, answer_rows)
@@ -205,7 +235,12 @@ class TestManager:
         summary_payload = {
             **summary_data,
             "pass_rate_pct": float(summary_data.get("pass_rate_pct", 0.0) or 0.0),
+            "average_score": float(summary_data.get("average_score", 0.0) or 0.0),
             "current_streak_days": self._compute_current_streak_days(activity_dates),
+            "best_streak_days": self._compute_best_streak_days(activity_dates),
+            "last_activity_at": summary_data.get("last_activity_at"),
+            "average_time_seconds": float(summary_data.get("average_time_seconds", 0.0) or 0.0),
+            "total_time_seconds": int(summary_data.get("total_time_seconds", 0) or 0),
         }
 
         return StatsResponse(

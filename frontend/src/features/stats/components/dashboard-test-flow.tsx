@@ -32,6 +32,7 @@ import {
 type DashboardTestFlowProps = {
   accessToken: string | null
   onBackToDashboard: () => void
+  backButtonLabel?: string
 }
 
 type FlowStep = 'permit-selection' | 'mode-selection' | 'test-session' | 'test-result' | 'test-review'
@@ -230,7 +231,7 @@ function getPermitPresentation(permit: Permit): PermitPresentation {
   )
 }
 
-export function DashboardTestFlow({ accessToken, onBackToDashboard }: DashboardTestFlowProps) {
+export function DashboardTestFlow({ accessToken, onBackToDashboard, backButtonLabel = 'Volver al dashboard' }: DashboardTestFlowProps) {
   const permitsQuery = usePermits(accessToken)
   const generateTestMutation = useGenerateTest(accessToken)
   const generateTestAsync = generateTestMutation.mutateAsync
@@ -424,7 +425,7 @@ export function DashboardTestFlow({ accessToken, onBackToDashboard }: DashboardT
   if (step === 'test-session' && selectedPermit && selectedOption) {
     return (
       <div className="grid gap-6 xl:gap-7">
-        <TopActionButton label="Volver al dashboard" onClick={onBackToDashboard} />
+        <TopActionButton label={backButtonLabel} onClick={onBackToDashboard} />
 
         <section className="grid gap-2">
           <p className="m-0 text-sm font-semibold tracking-[0.12em] uppercase text-[#2C5F8A]">Fase del test</p>
@@ -568,7 +569,7 @@ export function DashboardTestFlow({ accessToken, onBackToDashboard }: DashboardT
 
   return (
     <div className="grid gap-6 xl:gap-7">
-      <TopActionButton label="Volver al dashboard" onClick={onBackToDashboard} />
+      <TopActionButton label={backButtonLabel} onClick={onBackToDashboard} />
 
       <section className="grid gap-2">
         <p className="m-0 text-sm font-semibold tracking-[0.12em] uppercase text-[#2C5F8A]">Nuevo test</p>

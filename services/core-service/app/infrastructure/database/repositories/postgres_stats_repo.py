@@ -24,14 +24,34 @@ class PostgresStatsRepository(StatsRepository):
             filters.append(TestModel.permit_id == permit_id)
         return filters
 
+    def _duration_seconds_expression(self):
+        if self.session.bind and self.session.bind.dialect.name == "sqlite":
+            return (func.julianday(AttemptModel.finished_at) - func.julianday(AttemptModel.started_at)) * 86400.0
+        return func.extract("epoch", AttemptModel.finished_at - AttemptModel.started_at)
+
     def get_summary(self, *, user_id: str, permit_id: Optional[int] = None) -> dict:
         passed_case = case((AttemptModel.wrong_count <= 3, 1), else_=0)
+        duration_seconds = self._duration_seconds_expression()
+        valid_duration_seconds = case(
+            (
+                (AttemptModel.started_at.is_not(None))
+                & (AttemptModel.finished_at.is_not(None))
+                & (AttemptModel.finished_at >= AttemptModel.started_at),
+                duration_seconds,
+            ),
+            else_=None,
+        )
+        activity_at = func.coalesce(AttemptModel.finished_at, AttemptModel.started_at)
         stmt = (
             select(
                 func.count(AttemptModel.id).label("total_tests"),
                 func.coalesce(func.sum(passed_case), 0).label("passed_tests"),
                 func.coalesce(func.sum(AttemptModel.correct_count), 0).label("total_correct"),
                 func.coalesce(func.sum(AttemptModel.total_questions), 0).label("total_questions"),
+                func.coalesce(func.avg(AttemptModel.score), 0).label("average_score"),
+                func.max(activity_at).label("last_activity_at"),
+                func.coalesce(func.avg(valid_duration_seconds), 0).label("average_time_seconds"),
+                func.coalesce(func.sum(valid_duration_seconds), 0).label("total_time_seconds"),
             )
             .select_from(AttemptModel)
             .join(TestModel, TestModel.id == AttemptModel.test_id)
@@ -52,6 +72,10 @@ class PostgresStatsRepository(StatsRepository):
             "failed_tests": failed_tests,
             "accuracy_pct": accuracy_pct,
             "pass_rate_pct": pass_rate_pct,
+            "average_score": round(float(row.average_score or 0), 2),
+            "last_activity_at": row.last_activity_at,
+            "average_time_seconds": round(float(row.average_time_seconds or 0), 2),
+            "total_time_seconds": int(round(float(row.total_time_seconds or 0))),
         }
 
     def get_by_topic(self, *, user_id: str, permit_id: Optional[int] = None) -> list[dict]:

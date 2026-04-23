@@ -53,9 +53,16 @@ function createGeneratedTestResponse(mode: 'PERMIT' | 'TOPIC' | 'RANDOM' | 'FAIL
 const statsResponse = {
   summary: {
     total_tests: 10,
+    passed_tests: 8,
+    failed_tests: 2,
     pass_rate_pct: 80,
     accuracy_pct: 80.5,
+    average_score: 82.4,
     current_streak_days: 6,
+    best_streak_days: 9,
+    last_activity_at: '2026-04-11T10:15:30Z',
+    average_time_seconds: 545,
+    total_time_seconds: 5450,
   },
   history: [
     {
@@ -68,6 +75,7 @@ const statsResponse = {
       accuracy_pct: 86.7,
       permit_code: 'B',
       topic_id: 101,
+      duration_seconds: null,
     },
     {
       test_id: 78,
@@ -79,6 +87,19 @@ const statsResponse = {
       accuracy_pct: 73.3,
       permit_code: 'B',
       topic_id: null,
+      duration_seconds: null,
+    },
+    {
+      test_id: 79,
+      created_at: '2026-04-08T08:40:00Z',
+      passed: true,
+      score: 88,
+      correct_count: 27,
+      wrong_count: 3,
+      accuracy_pct: 90,
+      permit_code: 'B',
+      topic_id: null,
+      duration_seconds: null,
     },
   ],
   goal: {

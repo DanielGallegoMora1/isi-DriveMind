@@ -61,7 +61,7 @@ def submit_test(
         detail = str(exc)
         if detail == "test_not_found":
             raise not_found_problem(detail) from exc
-        if detail in {"duplicate_answers", "answers_not_in_test", "invalid_option_for_question"}:
+        if detail in {"duplicate_answers", "answers_not_in_test", "invalid_option_for_question", "invalid_started_at"}:
             raise unprocessable_problem(detail) from exc
         raise
 
