@@ -9,6 +9,7 @@ services/core-service/.venv/
 *.sqlite
 *.db
 .coverage
+.tmp-verify/
 
 node_modules/
 dist/
