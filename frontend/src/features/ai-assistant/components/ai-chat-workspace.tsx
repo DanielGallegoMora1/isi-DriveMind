@@ -2,6 +2,8 @@ import { useMemo, useState, type FormEvent } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { clsx } from 'clsx'
 import { Bot, MessageSquareText, Plus, SendHorizonal } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { Card } from '../../../components/ui/card'
 import { Button } from '../../../components/ui/button'
 import { EmptyState } from '../../../components/ui/empty-state'
@@ -188,7 +190,7 @@ export function AiChatWorkspace({ accessToken, userName }: AiChatWorkspaceProps)
                   type="button"
                   onClick={() => void handleSelectConversation(conversation.id)}
                   className={clsx(
-                    'grid w-full gap-3 rounded-[24px] border px-4 py-4 text-left transition-all duration-200',
+                    'grid w-full gap-3 rounded-3xl border px-4 py-4 text-left transition-all duration-200',
                     isSelected
                       ? 'border-[#6f96d6] bg-[#eaf1ff] shadow-[0_24px_36px_-30px_rgba(18,42,76,0.55)]'
                       : 'border-[#d9e3ef] bg-white hover:border-[#a8c0e0] hover:bg-[#f8fbff]',
@@ -280,13 +282,23 @@ export function AiChatWorkspace({ accessToken, userName }: AiChatWorkspaceProps)
                     <div className={clsx('flex max-w-[84%] flex-col gap-2', isUser ? 'items-end' : 'items-start')}>
                       <div
                         className={clsx(
-                          'rounded-[24px] px-4 py-3 shadow-[0_24px_36px_-30px_rgba(18,42,76,0.45)]',
+                          'rounded-3xl px-4 py-3 shadow-[0_24px_36px_-30px_rgba(18,42,76,0.45)]',
                           isUser
                             ? 'rounded-br-md bg-[#102540] text-white'
                             : 'rounded-bl-md border border-[#d8e1eb] bg-[#eef2f6] text-[#18314f]',
                         )}
                       >
-                        <p className="m-0 whitespace-pre-wrap text-sm leading-6">{message.content}</p>
+                        {isUser ? (
+                          <p className="m-0 whitespace-pre-wrap text-sm leading-6">
+                            {message.content}
+                          </p>
+                        ) : (
+                          <div className="prose prose-sm prose-slate max-w-none leading-6 *:first:mt-0 *:last:mb-0 prose-p:my-2 prose-ul:my-2">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {message.content}
+                            </ReactMarkdown>
+                          </div>
+                        )}
                       </div>
                       <span className="px-1 text-xs text-[#7b8b9f]">{formatMessageTimestamp(message.created_at)}</span>
                     </div>
@@ -297,7 +309,7 @@ export function AiChatWorkspace({ accessToken, userName }: AiChatWorkspaceProps)
               {sendMessageMutation.isPending ? (
                 <article className="flex justify-start">
                   <div className="flex max-w-[84%] flex-col gap-2 items-start">
-                    <div className="rounded-[24px] rounded-bl-md border border-[#d8e1eb] bg-[#eef2f6] px-4 py-3 text-[#18314f] shadow-[0_24px_36px_-30px_rgba(18,42,76,0.45)]">
+                    <div className="rounded-3xl rounded-bl-md border border-[#d8e1eb] bg-[#eef2f6] px-4 py-3 text-[#18314f] shadow-[0_24px_36px_-30px_rgba(18,42,76,0.45)]">
                       <div className="flex items-center gap-3 text-sm">
                         <Spinner size="sm" className="border-[#ced9e7] border-t-[#2f6df3]" />
                         <span>El asistente está escribiendo…</span>
@@ -320,7 +332,7 @@ export function AiChatWorkspace({ accessToken, userName }: AiChatWorkspaceProps)
         </div>
 
         <form className="border-t border-[#dde6f0] bg-white px-5 py-3 md:px-6" onSubmit={(event) => void handleSubmit(event)}>
-          <div className="grid gap-2 rounded-[24px] border border-[#d8e2ee] bg-[#fbfdff] px-3 py-2 shadow-[0_24px_36px_-30px_rgba(18,42,76,0.25)]">
+          <div className="grid gap-2 rounded-3xl border border-[#d8e2ee] bg-[#fbfdff] px-3 py-2 shadow-[0_24px_36px_-30px_rgba(18,42,76,0.25)]">
             <label className="sr-only" htmlFor="ai-chat-message">
               Escribe tu pregunta aquí…
             </label>
