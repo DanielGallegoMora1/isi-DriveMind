@@ -32,6 +32,12 @@ class FakeUserRepository(UserRepository):
         user = self.get_by_email(email)
         return getattr(user, "password_hash", None) if user else None
 
+    def update_password_hash(self, user_id: UUID, password_hash: str) -> None:
+        user = self.get_by_id(user_id)
+        if not user:
+            raise ValueError(f"User {user_id} not found")
+        setattr(user, "password_hash", password_hash)
+
     def list_by_school(
         self,
         school_id: UUID,

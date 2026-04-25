@@ -14,7 +14,7 @@ describe('HomePage', () => {
     expect(screen.getByText('Tasa de aprobados')).toBeInTheDocument()
     expect(screen.getByText('¿Listo para practicar?')).toBeInTheDocument()
     expect(screen.getByText('Elige un tipo de test y mejora tu preparación para el examen teórico')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Ver todo' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Ver todo' })).toHaveAttribute('href', '/tests')
     expect(screen.getByText('Progreso general')).toBeInTheDocument()
     expect(screen.getByText('Basado en tu tasa de aciertos global')).toBeInTheDocument()
     expect(screen.getByText(/Tu actividad más nueva/i)).toBeInTheDocument()

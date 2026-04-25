@@ -6,8 +6,14 @@ type LoginValues = {
   password: string
 }
 
+type ChangePasswordValues = {
+  currentPassword: string
+  newPassword: string
+}
+
 export type AuthContextValue = {
   accessToken: string | null
+  changePassword: (values: ChangePasswordValues) => Promise<void>
   isAuthenticated: boolean
   isLoading: boolean
   login: (values: LoginValues) => Promise<void>

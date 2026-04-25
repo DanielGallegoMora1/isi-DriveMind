@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../features/auth'
+import { LogOut } from 'lucide-react'
 import { AiChatIcon, HomeIcon, SettingsIcon, StatsIcon, TestsIcon } from './icons'
 import { Button } from './ui/button'
 
@@ -64,8 +65,11 @@ export function AppShell() {
               <p className="m-0 text-sm text-[#5f7287]">{subtitle}</p>
             </div>
           </div>
-          <Button className="w-full" variant="secondary" onClick={logout} type="button">
-            Cerrar sesión
+          <Button className="w-full bg-[#c94b59] text-white hover:bg-[#b53c4a]" variant="primary" onClick={logout} type="button">
+            <span className="inline-flex items-center gap-2">
+              <LogOut className="size-4" strokeWidth={2} />
+              Cerrar sesión
+            </span>
           </Button>
         </div>
       </aside>

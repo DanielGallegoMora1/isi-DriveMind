@@ -98,6 +98,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     writeStoredAuth({ accessToken: response.access_token, user: response.user })
   }
 
+  async function changePassword(values: { currentPassword: string; newPassword: string }) {
+    if (!accessToken) {
+      throw new Error('Tu sesión expiró. Iniciá sesión de nuevo.')
+    }
+
+    await authRequest.changePassword(accessToken, {
+      current_password: values.currentPassword,
+      new_password: values.newPassword,
+    })
+  }
+
   function logout() {
     writeStoredAuth(null)
     setAccessToken(null)
@@ -109,6 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         accessToken,
+        changePassword,
         isAuthenticated: status === 'authenticated',
         isLoading: status === 'loading',
         login,

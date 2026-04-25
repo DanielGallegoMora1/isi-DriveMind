@@ -22,3 +22,12 @@ export type LoginResponse = {
   expires_in: number
   user: AuthUser
 }
+
+export type ChangePasswordRequest = {
+  current_password: string
+  new_password: string
+}
+
+export type ChangePasswordResponse = {
+  message: string
+}

@@ -4,9 +4,12 @@ import { useAuth } from './features/auth/auth-context'
 import { AuthProvider } from './features/auth/auth-provider'
 import { AiChatPage } from './pages/ai-chat-page'
 import { HomePage } from './pages/home-page'
+import { HelpCenterPage } from './pages/help-center-page'
 import { LoginPage } from './pages/login-page'
+import { PrivacyPolicyPage } from './pages/privacy-policy-page'
 import { SettingsPage } from './pages/settings-page'
 import { StatsPage } from './pages/stats-page'
+import { TermsAndConditionsPage } from './pages/terms-and-conditions-page'
 import { TestsPage } from './pages/tests-page'
 
 function ProtectedLayout() {
@@ -69,6 +72,9 @@ function AppRoutes() {
         <Route element={<StatsPage />} path="/stats" />
         <Route element={<AiChatPage />} path="/ai-chat" />
         <Route element={<SettingsPage />} path="/settings" />
+        <Route element={<HelpCenterPage />} path="/settings/help-center" />
+        <Route element={<PrivacyPolicyPage />} path="/settings/privacy-policy" />
+        <Route element={<TermsAndConditionsPage />} path="/settings/terms-and-conditions" />
       </Route>
 
       <Route element={<Navigate replace to="/" />} path="*" />

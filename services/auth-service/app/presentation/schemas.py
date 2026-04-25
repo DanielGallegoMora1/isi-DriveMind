@@ -30,6 +30,15 @@ class LoginResponse(BaseModel):
     user: UserResponse
 
 
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
+class ChangePasswordResponse(BaseModel):
+    message: str
+
+
 # ─── Schools ─────────────────────────────────────────────────────────────────
 
 

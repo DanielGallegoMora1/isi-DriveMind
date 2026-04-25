@@ -8,7 +8,13 @@ from app.application import auth_use_cases
 from app.infrastructure.database.database import get_db
 from app.infrastructure.repositories.user_repository import SqlUserRepository
 from app.presentation.dependencies import CurrentUserDep
-from app.presentation.schemas import LoginRequest, LoginResponse, UserResponse
+from app.presentation.schemas import (
+    ChangePasswordRequest,
+    ChangePasswordResponse,
+    LoginRequest,
+    LoginResponse,
+    UserResponse,
+)
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
@@ -40,3 +46,32 @@ def me(db: DbDep, current: CurrentUserDep) -> UserResponse:
             status_code=status.HTTP_404_NOT_FOUND, detail="user_not_found"
         )
     return UserResponse(**user.__dict__)
+
+
+@router.post("/change-password", response_model=ChangePasswordResponse)
+def change_password(
+    body: ChangePasswordRequest, db: DbDep, current: CurrentUserDep
+) -> ChangePasswordResponse:
+    user_repo = SqlUserRepository(db)
+
+    try:
+        auth_use_cases.change_password(
+            UUID(current["sub"]),
+            body.current_password,
+            body.new_password,
+            user_repo,
+        )
+    except ValueError as e:
+        code = str(e)
+        if code == "user_not_found":
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="user_not_found"
+            )
+        if code == "invalid_current_password":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="invalid_current_password",
+            )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=code)
+
+    return ChangePasswordResponse(message="password_changed")

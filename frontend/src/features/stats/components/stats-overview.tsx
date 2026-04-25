@@ -125,7 +125,7 @@ export function StatsOverview({ accessToken, user, onStartTest }: StatsOverviewP
               <p className="m-0 text-sm text-[#5f7287]">Aquí solo se muestran los intentos más recientes para que detectes rápido si mantienes el nivel o conviene repasar.</p>
             </div>
 
-            <Link className="shrink-0 whitespace-nowrap text-sm font-semibold text-[#2C5F8A] transition-colors hover:text-[#1E3A5F]" to="/stats">
+            <Link className="shrink-0 whitespace-nowrap text-sm font-semibold text-[#2C5F8A] transition-colors hover:text-[#1E3A5F]" to="/tests">
               Ver todo
             </Link>
           </div>

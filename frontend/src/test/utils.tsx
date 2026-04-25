@@ -19,6 +19,7 @@ const mockUser: AuthUser = {
 function createAuthValue(overrides?: Partial<AuthContextValue>): AuthContextValue {
   return {
     accessToken: 'demo-token',
+    changePassword: async () => undefined,
     isAuthenticated: true,
     isLoading: false,
     login: async () => undefined,

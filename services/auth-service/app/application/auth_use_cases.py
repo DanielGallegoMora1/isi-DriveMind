@@ -11,10 +11,15 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 SECRET_KEY = settings.secret_key
 ALGORITHM = settings.algorithm
 TOKEN_EXPIRE_SECONDS = settings.access_token_expire_minutes * 60
+MIN_PASSWORD_LENGTH = 8
 
 
 def _verify_password(plain: str, hashed: str) -> bool:
     return pwd_context.verify(plain, hashed)
+
+
+def _hash_password(password: str) -> str:
+    return pwd_context.hash(password)
 
 
 def _create_token(user: User) -> str:
@@ -51,6 +56,29 @@ def get_me(user_id: UUID, user_repo: UserRepository) -> User:
     if not user:
         raise ValueError("user_not_found")
     return user
+
+
+def change_password(
+    user_id: UUID,
+    current_password: str,
+    new_password: str,
+    user_repo: UserRepository,
+) -> None:
+    user = user_repo.get_by_id(user_id)
+    if not user:
+        raise ValueError("user_not_found")
+
+    if len(new_password) < MIN_PASSWORD_LENGTH:
+        raise ValueError("password_too_short")
+
+    password_hash = user_repo.get_password_hash(user.email)
+    if not password_hash or not _verify_password(current_password, password_hash):
+        raise ValueError("invalid_current_password")
+
+    if _verify_password(new_password, password_hash):
+        raise ValueError("password_must_be_different")
+
+    user_repo.update_password_hash(user.id, _hash_password(new_password))
 
 
 def decode_token(token: str) -> dict:

@@ -15,6 +15,9 @@ class UserRepository(ABC):
     def get_password_hash(self, email: str) -> str | None: ...
 
     @abstractmethod
+    def update_password_hash(self, user_id: UUID, password_hash: str) -> None: ...
+
+    @abstractmethod
     def create(self, user: User, password_hash: str) -> User: ...
 
     @abstractmethod

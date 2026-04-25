@@ -37,6 +37,13 @@ class SqlUserRepository(UserRepository):
         row = self._db.query(orm.UserORM).filter_by(email=email).first()
         return row.password_hash if row else None
 
+    def update_password_hash(self, user_id: UUID, password_hash: str) -> None:
+        row = self._db.get(orm.UserORM, user_id)
+        if not row:
+            raise ValueError(f"User {user_id} not found")
+        row.password_hash = password_hash
+        self._db.commit()
+
     def list_by_school(
         self,
         school_id: UUID,
