@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import { AuthContext, type AuthContextValue } from '../features/auth/auth-context'
 import type { AuthUser } from '../features/auth/types'
+import { I18nProvider, type Language } from '../features/i18n'
 
 const mockUser: AuthUser = {
   id: 'user-1',
@@ -29,7 +30,11 @@ function createAuthValue(overrides?: Partial<AuthContextValue>): AuthContextValu
   }
 }
 
-export function renderWithProviders(ui: ReactElement, authOverrides?: Partial<AuthContextValue>) {
+export function renderWithProviders(
+  ui: ReactElement,
+  authOverrides?: Partial<AuthContextValue>,
+  options?: { language?: Language },
+) {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -41,7 +46,9 @@ export function renderWithProviders(ui: ReactElement, authOverrides?: Partial<Au
     return (
       <MemoryRouter>
         <QueryClientProvider client={queryClient}>
-          <AuthContext.Provider value={createAuthValue(authOverrides)}>{children}</AuthContext.Provider>
+          <I18nProvider initialLanguage={options?.language}>
+            <AuthContext.Provider value={createAuthValue(authOverrides)}>{children}</AuthContext.Provider>
+          </I18nProvider>
         </QueryClientProvider>
       </MemoryRouter>
     )

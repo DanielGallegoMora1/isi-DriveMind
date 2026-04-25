@@ -100,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function changePassword(values: { currentPassword: string; newPassword: string }) {
     if (!accessToken) {
-      throw new Error('Tu sesión expiró. Iniciá sesión de nuevo.')
+      throw new Error('session_expired')
     }
 
     await authRequest.changePassword(accessToken, {

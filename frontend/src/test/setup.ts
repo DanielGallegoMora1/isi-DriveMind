@@ -10,6 +10,7 @@ beforeAll(() => {
 
 afterEach(() => {
   cleanup()
+  window.localStorage.clear()
   resetAiAssistantMockState()
   server.resetHandlers()
 })

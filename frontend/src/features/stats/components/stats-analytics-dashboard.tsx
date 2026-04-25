@@ -4,6 +4,7 @@ import { AlertCircle, ArrowDownRight, ArrowUpRight, CheckCircle2 } from 'lucide-
 import { Card } from '../../../components/ui/card'
 import { EmptyState } from '../../../components/ui/empty-state'
 import { Spinner } from '../../../components/ui/spinner'
+import { useI18n } from '../../i18n'
 import { useStats } from '../hooks/use-stats'
 import { parseStatsDate } from '../lib/stats-date'
 import type {
@@ -28,29 +29,66 @@ const trendPalette = {
 
 const distributionPalette = ['#2453d0', '#2e7d5b', '#f3a83b', '#8b5cf6', '#ef6b5a']
 
-const testTypeLabels: Record<string, string> = {
-  PERMIT: 'Aleatorio',
+const testTypeLabelsEs: Record<string, string> = {
+  PERMIT: 'Por permiso',
   TOPIC: 'Por tema',
   RANDOM: 'Aleatorio',
   FAILED: 'Preguntas falladas',
 }
 
-const weekDayFormatter = new Intl.DateTimeFormat('es-ES', { weekday: 'short' })
-const shortDateFormatter = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' })
-const longDateFormatter = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
+const testTypeLabelsEn: Record<string, string> = {
+  PERMIT: 'By permit',
+  TOPIC: 'By topic',
+  RANDOM: 'Random',
+  FAILED: 'Failed questions',
+}
 
 export function StatsAnalyticsDashboard({ accessToken }: StatsAnalyticsDashboardProps) {
   const statsQuery = useStats(accessToken)
+  const { language, locale } = useI18n()
+  const copy = language === 'en'
+    ? {
+        noSession: 'No active session',
+        noSessionDescription: 'Sign in to load your personal statistics.',
+        loading: 'Loading statistics…',
+        errorTitle: 'We could not load your statistics',
+        errorDescription: 'Try again in a few seconds. This dashboard depends on the real GET /api/v1/stats contract.',
+        eyebrow: 'Performance analysis',
+        title: 'Statistics',
+        intro: 'Review how your results evolve, which test type you use most often, and where it makes sense to reinforce your study.',
+        totalTests: 'Tests taken',
+        averageAccuracy: 'Average accuracy',
+        passed: 'Passed',
+        strongestPoint: 'Strong point',
+        improvementArea: 'Improvement area',
+        trend: 'Trend',
+      }
+    : {
+        noSession: 'Sin sesión activa',
+        noSessionDescription: 'Inicia sesión para cargar tus estadísticas personales.',
+        loading: 'Cargando estadísticas…',
+        errorTitle: 'No hemos podido cargar tus estadísticas',
+        errorDescription: 'Vuelve a intentarlo en unos segundos. Este panel depende del contrato real de GET /api/v1/stats.',
+        eyebrow: 'Análisis de rendimiento',
+        title: 'Estadísticas',
+        intro: 'Revisa cómo evolucionan tus resultados, qué tipo de test haces con más frecuencia y dónde conviene reforzar el estudio.',
+        totalTests: 'Tests realizados',
+        averageAccuracy: 'Aciertos medios',
+        passed: 'Aprobados',
+        strongestPoint: 'Punto fuerte',
+        improvementArea: 'Área de mejora',
+        trend: 'Tendencia',
+      }
 
   if (!accessToken) {
-    return <EmptyState title="Sin sesión activa" description="Inicia sesión para cargar tus estadísticas personales." />
+    return <EmptyState title={copy.noSession} description={copy.noSessionDescription} />
   }
 
   if (statsQuery.isLoading) {
     return (
       <Card className="flex min-h-80 items-center justify-center gap-3 py-12">
         <Spinner className="border-[#d1dceb] border-t-[#2C5F8A]" />
-        <span className="text-sm text-[#5f7287]">Cargando estadísticas…</span>
+        <span className="text-sm text-[#5f7287]">{copy.loading}</span>
       </Card>
     )
   }
@@ -58,8 +96,8 @@ export function StatsAnalyticsDashboard({ accessToken }: StatsAnalyticsDashboard
   if (statsQuery.isError || !statsQuery.data) {
     return (
       <EmptyState
-        title="No hemos podido cargar tus estadísticas"
-        description="Vuelve a intentarlo en unos segundos. Este panel depende del contrato real de GET /api/v1/stats."
+        title={copy.errorTitle}
+        description={copy.errorDescription}
       />
     )
   }
@@ -69,23 +107,23 @@ export function StatsAnalyticsDashboard({ accessToken }: StatsAnalyticsDashboard
   const improvementArea = data.insights.improvement_area ?? inferImprovementArea(data.by_topic)
   const trendInsight = data.insights.trend ?? inferTrendInsight(data.trend)
   const chartSeries = buildTrendSeries(data.trend, data.history)
-  const periodLabel = buildPeriodLabel(data.trend, data.weekly_activity)
+  const periodLabel = buildPeriodLabel(data.trend, data.weekly_activity, language, locale)
 
   return (
     <section className="grid gap-6 text-[#1E3A5F]">
       <header className="grid gap-4 rounded-[28px] border border-[#dce5ef] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(246,249,252,0.96))] p-6 shadow-[0_20px_45px_-30px_rgba(30,58,95,0.22)] md:p-8">
         <div className="grid gap-2">
-          <p className="m-0 text-sm font-semibold tracking-[0.16em] uppercase text-[#2C5F8A]">Análisis de rendimiento</p>
-          <h1 className="m-0 text-[clamp(2rem,4vw,3rem)] leading-none">Estadísticas</h1>
+          <p className="m-0 text-sm font-semibold tracking-[0.16em] uppercase text-[#2C5F8A]">{copy.eyebrow}</p>
+          <h1 className="m-0 text-[clamp(2rem,4vw,3rem)] leading-none">{copy.title}</h1>
           <p className="m-0 max-w-3xl text-sm text-[#5f7287] md:text-base">
-            Revisa cómo evolucionan tus resultados, qué tipo de test haces con más frecuencia y dónde conviene reforzar el estudio.
+            {copy.intro}
           </p>
         </div>
 
         <div className="grid gap-3 md:grid-cols-3">
-          <HeaderMetric label="Tests realizados" value={String(data.summary.total_tests)} />
-          <HeaderMetric label="Aciertos medios" value={formatPercentage(data.summary.accuracy_pct)} />
-          <HeaderMetric label="Aprobados" value={formatPercentage(data.summary.pass_rate_pct)} />
+          <HeaderMetric label={copy.totalTests} value={String(data.summary.total_tests)} />
+          <HeaderMetric label={copy.averageAccuracy} value={formatPercentage(data.summary.accuracy_pct, locale)} />
+          <HeaderMetric label={copy.passed} value={formatPercentage(data.summary.pass_rate_pct, locale)} />
         </div>
       </header>
 
@@ -101,24 +139,24 @@ export function StatsAnalyticsDashboard({ accessToken }: StatsAnalyticsDashboard
       <section className="grid gap-4 xl:grid-cols-3">
         <InsightCard
           icon={<CheckCircle2 className="size-5" />}
-          title="Punto fuerte"
-          variant="strong"
-          description={buildStrongestTopicCopy(strongestTopic)}
-        />
+            title={copy.strongestPoint}
+            variant="strong"
+            description={buildStrongestTopicCopy(strongestTopic, language, locale)}
+          />
         <InsightCard
           icon={<AlertCircle className="size-5" />}
-          title="Área de mejora"
-          variant="improve"
-          description={buildImprovementCopy(improvementArea)}
-        />
+            title={copy.improvementArea}
+            variant="improve"
+            description={buildImprovementCopy(improvementArea, language, locale)}
+          />
         <InsightCard
           icon={
             trendInsight.direction === 'down' ? <ArrowDownRight className="size-5" /> : <ArrowUpRight className="size-5" />
           }
-          title="Tendencia"
-          variant="trend"
-          description={buildTrendCopy(trendInsight)}
-        />
+           title={copy.trend}
+           variant="trend"
+           description={buildTrendCopy(trendInsight, language, locale)}
+         />
       </section>
     </section>
   )
@@ -158,24 +196,26 @@ function HeaderMetric({ label, value }: { label: string; value: string }) {
 }
 
 function TrendCard({ series, subtitle }: { series: TrendSeriesItem[]; subtitle: string }) {
+  const { language } = useI18n()
   return (
     <Card as="section" className="grid gap-5 p-6 md:p-7">
       <div className="grid gap-1">
-        <h2 className="m-0 text-2xl text-[#1E3A5F]">Evolución del rendimiento</h2>
+        <h2 className="m-0 text-2xl text-[#1E3A5F]">{language === 'en' ? 'Performance evolution' : 'Evolución del rendimiento'}</h2>
         <p className="m-0 text-sm text-[#5f7287]">{subtitle}</p>
       </div>
 
-      {series.length > 0 ? <TrendChart series={series} /> : <InlineMessage message="Todavía no hay suficiente histórico para dibujar la evolución diaria." />}
+      {series.length > 0 ? <TrendChart series={series} /> : <InlineMessage message={language === 'en' ? 'There is not enough history yet to draw the daily evolution.' : 'Todavía no hay suficiente histórico para dibujar la evolución diaria.'} />}
 
       <div className="flex flex-wrap gap-4 border-t border-[#ecf1f6] pt-4 text-sm text-[#5f7287]">
-        <LegendItem color={trendPalette.accuracy} label="% de aciertos" />
-        <LegendItem color={trendPalette.passRate} label="% de aprobados" />
+        <LegendItem color={trendPalette.accuracy} label={language === 'en' ? '% accuracy' : '% de aciertos'} />
+        <LegendItem color={trendPalette.passRate} label={language === 'en' ? '% passed' : '% de aprobados'} />
       </div>
     </Card>
   )
 }
 
 function TrendChart({ series }: { series: TrendSeriesItem[] }) {
+  const { language, locale } = useI18n()
   const width = 620
   const height = 260
   const padding = { top: 20, right: 18, bottom: 34, left: 52 }
@@ -197,7 +237,7 @@ function TrendChart({ series }: { series: TrendSeriesItem[] }) {
 
   return (
     <div className="overflow-x-auto">
-      <svg aria-label="Gráfico de evolución del rendimiento" className="min-w-full" viewBox={`0 0 ${width} ${height}`}>
+      <svg aria-label={language === 'en' ? 'Performance evolution chart' : 'Gráfico de evolución del rendimiento'} className="min-w-full" viewBox={`0 0 ${width} ${height}`}>
         {ticks.map((tick) => {
           const y = padding.top + innerHeight - (tick / 100) * innerHeight
           return (
@@ -229,7 +269,7 @@ function TrendChart({ series }: { series: TrendSeriesItem[] }) {
           const x = padding.left + (series.length === 1 ? innerWidth / 2 : (innerWidth / (series.length - 1)) * index)
           return (
             <text key={item.period} x={x} y={height - 10} fill="#7a8ca0" fontSize="11" textAnchor="middle">
-              {formatChartDay(item.period)}
+              {formatChartDay(item.period, locale)}
             </text>
           )
         })}
@@ -239,17 +279,18 @@ function TrendChart({ series }: { series: TrendSeriesItem[] }) {
 }
 
 function DistributionCard({ items, totalTests }: { items: TestTypeDistributionItem[]; totalTests: number }) {
+  const { language } = useI18n()
   const normalizedItems = normalizeDistributionItems(items).slice(0, 5).map((item, index) => ({
     ...item,
-    label: testTypeLabels[item.test_type] ?? item.test_type,
+    label: (language === 'en' ? testTypeLabelsEn : testTypeLabelsEs)[item.test_type] ?? item.test_type,
     color: distributionPalette[index % distributionPalette.length],
   }))
 
   return (
     <Card as="section" className="grid gap-5 p-6 md:p-7">
       <div className="grid gap-1">
-        <h2 className="m-0 text-2xl text-[#1E3A5F]">Distribución de tests</h2>
-        <p className="m-0 text-sm text-[#5f7287]">Reparto real por tipo de práctica registrada.</p>
+        <h2 className="m-0 text-2xl text-[#1E3A5F]">{language === 'en' ? 'Test distribution' : 'Distribución de tests'}</h2>
+        <p className="m-0 text-sm text-[#5f7287]">{language === 'en' ? 'Real breakdown by recorded practice type.' : 'Reparto real por tipo de práctica registrada.'}</p>
       </div>
 
       {normalizedItems.length > 0 ? (
@@ -266,7 +307,7 @@ function DistributionCard({ items, totalTests }: { items: TestTypeDistributionIt
           </div>
         </>
       ) : (
-        <InlineMessage message="Aún no hay distribución suficiente para mostrar el anillo por tipo de test." />
+        <InlineMessage message={language === 'en' ? 'There is not enough distribution yet to show the donut by test type.' : 'Aún no hay distribución suficiente para mostrar el anillo por tipo de test.'} />
       )}
     </Card>
   )
@@ -279,6 +320,7 @@ function DonutChart({
   items: Array<TestTypeDistributionItem & { label: string; color: string }>
   total: number
 }) {
+  const { language } = useI18n()
   const radius = 58
   const circumference = 2 * Math.PI * radius
   const segments = items.reduce<Array<(TestTypeDistributionItem & { label: string; color: string; dash: number; offset: number })>>(
@@ -317,9 +359,9 @@ function DonutChart({
           ))}
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-          <span className="text-xs font-semibold tracking-[0.14em] uppercase text-[#7a8ca0]">Total</span>
+          <span className="text-xs font-semibold tracking-[0.14em] uppercase text-[#7a8ca0]">{language === 'en' ? 'Total' : 'Total'}</span>
           <strong className="text-3xl text-[#1E3A5F]">{total}</strong>
-          <span className="text-sm text-[#5f7287]">tests</span>
+          <span className="text-sm text-[#5f7287]">{language === 'en' ? 'tests' : 'tests'}</span>
         </div>
       </div>
     </div>
@@ -327,14 +369,15 @@ function DonutChart({
 }
 
 function ByTopicCard({ topics }: { topics: StatsByTopic[] }) {
-  const topicLabelFormatter = buildTopicChartLabelFormatter(topics)
+  const { language, locale } = useI18n()
+  const topicLabelFormatter = buildTopicChartLabelFormatter(topics, language)
   const chartMinWidth = Math.max(topics.length * 108, 640)
 
   return (
     <Card as="section" className="grid gap-5 p-6 md:p-7">
       <div className="grid gap-1">
-        <h2 className="m-0 text-2xl text-[#1E3A5F]">Rendimiento por tema</h2>
-        <p className="m-0 text-sm text-[#5f7287]">Porcentaje de aciertos por bloque temático según los datos ya registrados.</p>
+        <h2 className="m-0 text-2xl text-[#1E3A5F]">{language === 'en' ? 'Performance by topic' : 'Rendimiento por tema'}</h2>
+        <p className="m-0 text-sm text-[#5f7287]">{language === 'en' ? 'Accuracy percentage by topic block according to the data already recorded.' : 'Porcentaje de aciertos por bloque temático según los datos ya registrados.'}</p>
       </div>
 
       {topics.length > 0 ? (
@@ -368,7 +411,7 @@ function ByTopicCard({ topics }: { topics: StatsByTopic[] }) {
                     <div className="flex h-full w-full min-w-0 flex-col justify-end">
                       <div className="flex min-h-0 flex-1 items-end">
                         <div
-                          aria-label={`${topicLabelFormatter(topic)}: ${formatPercentage(topic.accuracy_pct)}`}
+                           aria-label={`${topicLabelFormatter(topic)}: ${formatPercentage(topic.accuracy_pct, locale)}`}
                           className="w-full rounded-t-[18px] bg-[linear-gradient(180deg,#7aa8ff_0%,#2453d0_100%)] shadow-[0_18px_26px_-22px_rgba(36,83,208,0.9)]"
                           style={{ height: `${Math.max(topic.accuracy_pct, topic.accuracy_pct > 0 ? 8 : 0)}%` }}
                         />
@@ -395,20 +438,21 @@ function ByTopicCard({ topics }: { topics: StatsByTopic[] }) {
           </div>
         </div>
       ) : (
-        <InlineMessage message="Todavía no hay temas suficientes con actividad para comparar porcentajes." />
+         <InlineMessage message={language === 'en' ? 'There are not enough active topics yet to compare percentages.' : 'Todavía no hay temas suficientes con actividad para comparar porcentajes.'} />
       )}
     </Card>
   )
 }
 
 function WeeklyActivityCard({ items }: { items: WeeklyActivityItem[] }) {
+  const { language } = useI18n()
   const maxTests = Math.max(...items.map((item) => item.tests), 0)
 
   return (
     <Card as="section" className="grid gap-5 p-6 md:p-7">
       <div className="grid gap-1">
-        <h2 className="m-0 text-2xl text-[#1E3A5F]">Actividad semanal</h2>
-        <p className="m-0 text-sm text-[#5f7287]">Tests realizados por día durante la última ventana semanal disponible.</p>
+        <h2 className="m-0 text-2xl text-[#1E3A5F]">{language === 'en' ? 'Weekly activity' : 'Actividad semanal'}</h2>
+        <p className="m-0 text-sm text-[#5f7287]">{language === 'en' ? 'Tests taken per day during the last available weekly window.' : 'Tests realizados por día durante la última ventana semanal disponible.'}</p>
       </div>
 
       {items.length > 0 ? (
@@ -417,21 +461,21 @@ function WeeklyActivityCard({ items }: { items: WeeklyActivityItem[] }) {
             <div key={item.date} className="grid gap-3 text-center">
               <div className="flex h-44 items-end justify-center rounded-[20px] bg-[#f6f9fc] px-3 py-4">
                 <div
-                  aria-label={`${formatWeekDay(item.date)}: ${item.tests} tests`}
+                   aria-label={`${formatWeekDay(item.date, language === 'en' ? 'en-US' : 'es-ES')}: ${item.tests} ${language === 'en' ? 'tests' : 'tests'}`}
                   className="w-full rounded-[16px] bg-[linear-gradient(180deg,#83d0ff_0%,#2C5F8A_100%)] shadow-[0_16px_28px_-22px_rgba(44,95,138,0.9)]"
                   style={{ height: `${maxTests === 0 ? 0 : Math.max((item.tests / maxTests) * 100, item.tests > 0 ? 10 : 0)}%` }}
                 />
               </div>
               <div className="grid gap-1">
                 <strong className="text-lg text-[#1E3A5F]">{item.tests}</strong>
-                <span className="text-xs uppercase tracking-[0.12em] text-[#7a8ca0]">{formatWeekDay(item.date)}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <InlineMessage message="Aún no hay actividad suficiente para resumir la semana." />
-      )}
+                 <span className="text-xs uppercase tracking-[0.12em] text-[#7a8ca0]">{formatWeekDay(item.date, language === 'en' ? 'en-US' : 'es-ES')}</span>
+               </div>
+             </div>
+           ))}
+         </div>
+       ) : (
+         <InlineMessage message={language === 'en' ? 'There is still not enough activity to summarize the week.' : 'Aún no hay actividad suficiente para resumir la semana.'} />
+       )}
     </Card>
   )
 }
@@ -535,15 +579,17 @@ function normalizeDistributionItems(items: TestTypeDistributionItem[]): TestType
   return [...grouped.values()].sort((left, right) => right.tests - left.tests)
 }
 
-function buildPeriodLabel(trend: StatsTrendItem[], weeklyActivity: WeeklyActivityItem[]) {
+function buildPeriodLabel(trend: StatsTrendItem[], weeklyActivity: WeeklyActivityItem[], language: 'es' | 'en', locale: string) {
   const firstPeriod = trend[0]?.period ?? weeklyActivity[0]?.date
   const lastPeriod = trend[trend.length - 1]?.period ?? weeklyActivity[weeklyActivity.length - 1]?.date
 
   if (!firstPeriod || !lastPeriod) {
-    return 'Sin datos temporales suficientes todavía.'
+    return language === 'en' ? 'There is still not enough temporal data.' : 'Sin datos temporales suficientes todavía.'
   }
 
-  return `Datos del ${formatLongDate(firstPeriod)} al ${formatLongDate(lastPeriod)}`
+  return language === 'en'
+    ? `Data from ${formatLongDate(firstPeriod, locale)} to ${formatLongDate(lastPeriod, locale)}`
+    : `Datos del ${formatLongDate(firstPeriod, locale)} al ${formatLongDate(lastPeriod, locale)}`
 }
 
 function inferStrongestTopic(topics: StatsByTopic[]): TopicInsight | null {
@@ -598,28 +644,36 @@ function inferTrendInsight(trend: StatsTrendItem[]): AccuracyTrendInsight {
   }
 }
 
-function buildStrongestTopicCopy(topic: TopicInsight | null) {
+function buildStrongestTopicCopy(topic: TopicInsight | null, language: 'es' | 'en', locale: string) {
   if (!topic) {
-    return 'Todavía no hay volumen suficiente para identificar un tema claramente fuerte.'
+    return language === 'en'
+      ? 'There is still not enough volume to identify a clearly strong topic.'
+      : 'Todavía no hay volumen suficiente para identificar un tema claramente fuerte.'
   }
 
-  return `${formatTopicLabel(topic)} destaca con ${formatPercentage(topic.accuracy_pct)} de aciertos y un balance de ${topic.correct} correctas frente a ${topic.wrong} falladas.`
+  return language === 'en'
+    ? `${formatTopicLabel(topic, language)} stands out with ${formatPercentage(topic.accuracy_pct, locale)} accuracy and a balance of ${topic.correct} correct answers against ${topic.wrong} wrong ones.`
+    : `${formatTopicLabel(topic, language)} destaca con ${formatPercentage(topic.accuracy_pct, locale)} de aciertos y un balance de ${topic.correct} correctas frente a ${topic.wrong} falladas.`
 }
 
-function buildImprovementCopy(topic: TopicInsight | null) {
+function buildImprovementCopy(topic: TopicInsight | null, language: 'es' | 'en', locale: string) {
   if (!topic) {
-    return 'Aún no hay datos comparables para señalar una zona de mejora concreta.'
+    return language === 'en'
+      ? 'There is still no comparable data to point to a specific improvement area.'
+      : 'Aún no hay datos comparables para señalar una zona de mejora concreta.'
   }
 
-  return `${formatTopicLabel(topic)} es el bloque que más conviene repasar: ${formatPercentage(topic.accuracy_pct)} de aciertos y ${topic.wrong} errores acumulados.`
+  return language === 'en'
+    ? `${formatTopicLabel(topic, language)} is the block most worth reviewing: ${formatPercentage(topic.accuracy_pct, locale)} accuracy and ${topic.wrong} accumulated mistakes.`
+    : `${formatTopicLabel(topic, language)} es el bloque que más conviene repasar: ${formatPercentage(topic.accuracy_pct, locale)} de aciertos y ${topic.wrong} errores acumulados.`
 }
 
-function formatTopicLabel(topic: Pick<StatsByTopic, 'topic_id' | 'topic_name'> | Pick<TopicInsight, 'topic_id' | 'topic_name'>) {
+function formatTopicLabel(topic: Pick<StatsByTopic, 'topic_id' | 'topic_name'> | Pick<TopicInsight, 'topic_id' | 'topic_name'>, language: 'es' | 'en') {
   const name = topic.topic_name?.trim()
-  return name && name.length <= 24 ? name : `Tema ${topic.topic_id}`
+  return name && name.length <= 24 ? name : `${language === 'en' ? 'Topic' : 'Tema'} ${topic.topic_id}`
 }
 
-function buildTopicChartLabelFormatter(topics: StatsByTopic[]) {
+function buildTopicChartLabelFormatter(topics: StatsByTopic[], language: 'es' | 'en') {
   const useTopicNames = topics.every((topic) => Boolean(topic.topic_name?.trim()))
 
   return (topic: Pick<StatsByTopic, 'topic_id' | 'topic_name'>) => {
@@ -627,41 +681,47 @@ function buildTopicChartLabelFormatter(topics: StatsByTopic[]) {
       return topic.topic_name!.trim()
     }
 
-    return `Tema ${topic.topic_id}`
-  }
-}
+     return `${language === 'en' ? 'Topic' : 'Tema'} ${topic.topic_id}`
+   }
+ }
 
-function buildTrendCopy(trend: AccuracyTrendInsight) {
+function buildTrendCopy(trend: AccuracyTrendInsight, language: 'es' | 'en', locale: string) {
   if (trend.direction === 'up') {
-    return `En los últimos ${trend.window_days} días tu precisión ha subido ${formatPercentage(Math.abs(trend.change_pct_points))} respecto al periodo anterior.`
+    return language === 'en'
+      ? `In the last ${trend.window_days} days your accuracy has increased by ${formatPercentage(Math.abs(trend.change_pct_points), locale)} compared with the previous period.`
+      : `En los últimos ${trend.window_days} días tu precisión ha subido ${formatPercentage(Math.abs(trend.change_pct_points), locale)} respecto al periodo anterior.`
   }
 
   if (trend.direction === 'down') {
-    return `En los últimos ${trend.window_days} días tu precisión ha bajado ${formatPercentage(Math.abs(trend.change_pct_points))}. Conviene revisar los temas con peor porcentaje.`
+    return language === 'en'
+      ? `In the last ${trend.window_days} days your accuracy has dropped by ${formatPercentage(Math.abs(trend.change_pct_points), locale)}. It is worth reviewing the topics with the lowest percentage.`
+      : `En los últimos ${trend.window_days} días tu precisión ha bajado ${formatPercentage(Math.abs(trend.change_pct_points), locale)}. Conviene revisar los temas con peor porcentaje.`
   }
 
-  return `Tu precisión se mantiene estable en la ventana reciente de ${trend.window_days} días, sin cambios relevantes frente al periodo anterior.`
+  return language === 'en'
+    ? `Your accuracy remains stable in the recent ${trend.window_days}-day window, with no relevant changes compared with the previous period.`
+    : `Tu precisión se mantiene estable en la ventana reciente de ${trend.window_days} días, sin cambios relevantes frente al periodo anterior.`
 }
 
 function buildPolylinePath(points: Array<{ x: number; y: number }>) {
   return points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ')
 }
 
-function formatPercentage(value: number) {
-  return `${new Intl.NumberFormat('es-ES', { maximumFractionDigits: 1 }).format(value)}%`
+function formatPercentage(value: number, locale: string) {
+  return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(value)}%`
 }
 
-function formatLongDate(value: string) {
-  return longDateFormatter.format(parseStatsDate(value))
+function formatLongDate(value: string, locale: string) {
+  return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric' }).format(parseStatsDate(value))
 }
 
-function formatWeekDay(value: string) {
-  const label = weekDayFormatter.format(parseStatsDate(value))
+function formatWeekDay(value: string, locale: string) {
+  const label = new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(parseStatsDate(value))
   return label.endsWith('.') ? label.slice(0, -1) : label
 }
 
-function formatChartDay(value: string) {
-  return shortDateFormatter.format(parseStatsDate(value))
+function formatChartDay(value: string, locale: string) {
+  return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' }).format(parseStatsDate(value))
 }
 
 function clamp(value: number) {

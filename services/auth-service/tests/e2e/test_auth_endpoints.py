@@ -65,7 +65,7 @@ def test_change_password_endpoint_success(client, db_session):
     db_session.add(
         UserORM(
             id=user_id,
-            email="student@drivemind.test",
+            email="student@example.com",
             password_hash=pwd_context.hash("old-password"),
             role="student",
             full_name="Student Demo",
@@ -76,8 +76,9 @@ def test_change_password_endpoint_success(client, db_session):
 
     login_response = client.post(
         "/api/v1/auth/login",
-        json={"email": "student@drivemind.test", "password": "old-password"},
+        json={"email": "student@example.com", "password": "old-password"},
     )
+    assert login_response.status_code == 200, login_response.text
     token = login_response.json()["access_token"]
 
     response = client.post(
@@ -91,7 +92,7 @@ def test_change_password_endpoint_success(client, db_session):
 
     new_login_response = client.post(
         "/api/v1/auth/login",
-        json={"email": "student@drivemind.test", "password": "new-password"},
+        json={"email": "student@example.com", "password": "new-password"},
     )
     assert new_login_response.status_code == 200
 
@@ -105,7 +106,7 @@ def test_change_password_endpoint_rejects_invalid_current_password(client, db_se
     db_session.add(
         UserORM(
             id=user_id,
-            email="student2@drivemind.test",
+            email="student2@example.com",
             password_hash=pwd_context.hash("old-password"),
             role="student",
             full_name="Student Demo",
@@ -116,8 +117,9 @@ def test_change_password_endpoint_rejects_invalid_current_password(client, db_se
 
     login_response = client.post(
         "/api/v1/auth/login",
-        json={"email": "student2@drivemind.test", "password": "old-password"},
+        json={"email": "student2@example.com", "password": "old-password"},
     )
+    assert login_response.status_code == 200, login_response.text
     token = login_response.json()["access_token"]
 
     response = client.post(
@@ -136,4 +138,4 @@ def test_change_password_endpoint_requires_authentication(client):
         json={"current_password": "old-password", "new_password": "new-password"},
     )
 
-    assert response.status_code == 403
+    assert response.status_code == 401

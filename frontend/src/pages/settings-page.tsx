@@ -25,6 +25,7 @@ import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
 import { Card } from '../components/ui/card'
 import { useAuth } from '../features/auth'
+import { getLanguageLabel, useI18n } from '../features/i18n'
 import { ApiError } from '../lib/http'
 
 const MIN_PASSWORD_LENGTH = 8
@@ -90,10 +91,10 @@ const accentStyles = {
 
 export function SettingsPage() {
   const { changePassword, logout, user } = useAuth()
+  const { language, setLanguage } = useI18n()
   const navigate = useNavigate()
   const [pushNotifications, setPushNotifications] = useState(true)
   const [dailyReminders, setDailyReminders] = useState(false)
-  const [darkMode, setDarkMode] = useState(false)
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
   const [passwordValues, setPasswordValues] = useState<PasswordFormValues>({
     currentPassword: '',
@@ -109,9 +110,144 @@ export function SettingsPage() {
     newPassword: false,
     confirmPassword: false,
   })
+  const copy = language === 'en'
+    ? {
+        pageEyebrow: 'Personal settings',
+        title: 'Settings',
+        description: 'Customize your study experience, review your preferences, and find quick support access.',
+        notificationsButton: 'Open notifications center',
+        editAvatar: 'Edit avatar',
+        editProfile: 'Edit profile',
+        studySpaceTitle: 'Your study space',
+        studySpaceDescription: 'We gathered the settings you use most in one single view.',
+        profileStatLabel: 'Profile',
+        profileStatValue: 'Ready to personalize',
+        preferencesStatLabel: 'Preferences',
+        preferencesStatValue: 'Live preview active',
+        securityStatLabel: 'Security',
+        securityStatValue: 'Quick access available',
+        notificationsTitle: 'Notifications',
+        notificationsDescription: 'Set how you want to receive information about your daily activity without enabling the real logic yet.',
+        pushNotifications: 'Push notifications',
+        pushNotificationsDescription: 'Visual alerts about news, results, and important reminders.',
+        dailyReminders: 'Daily reminders',
+        dailyRemindersDescription: 'A small daily nudge to keep your study streak active.',
+        appearanceTitle: 'Appearance',
+        appearanceDescription: 'General visual details to adapt the interface to your current context of use.',
+        languageTitle: 'Language',
+        languageDescription: 'Choose the language used across the visible interface.',
+        languageSelectorLabel: 'Application language',
+        securityTitle: 'Security and privacy',
+        securityDescription: 'Quick access to sensitive options and key account documentation.',
+        changePassword: 'Change password',
+        changePasswordDescription: 'Update your access when the option is enabled',
+        privacyPolicy: 'Privacy policy',
+        privacyPolicyDescription: 'How we handle and protect your data',
+        terms: 'Terms and conditions',
+        termsDescription: 'General conditions for using the platform',
+        helpTitle: 'Help and support',
+        helpDescription: 'Fast ways to solve questions and send suggestions about the experience.',
+        helpCenter: 'Help center',
+        helpCenterDescription: 'Guides and frequent answers to study better',
+        contactSupport: 'Contact support',
+        contactSupportDescription: 'Direct channel for incidents or questions',
+        sendFeedback: 'Send feedback',
+        sendFeedbackDescription: 'Share ideas to improve future versions',
+        appVersion: 'App version',
+        logoutDescription: 'Your session closes using the current real authentication flow.',
+        logout: 'Log out',
+        modalTitle: 'Change password',
+        modalDescription: 'Update your real password with secure validation in frontend and backend.',
+        closeModal: 'Close modal',
+        currentPassword: 'Current password',
+        newPassword: 'New password',
+        confirmPassword: 'Confirm new password',
+        minimumPassword: `Minimum ${MIN_PASSWORD_LENGTH} characters.`,
+        cancel: 'Cancel',
+        saving: 'Saving...',
+        saveChanges: 'Save changes',
+        preview: 'Preview',
+        emailLabel: 'Email',
+        phoneLabel: 'Phone',
+        schoolLabel: 'Driving school',
+        emailUnavailable: 'No email available',
+        phoneUnavailable: 'No phone added yet',
+        schoolPending: 'School pending assignment',
+        linkedSchool: 'Linked center',
+        activeMembership: 'Active membership',
+        pendingAccount: 'Pending account',
+        profileFallback: 'DriveMind Student',
+      }
+    : {
+        pageEyebrow: 'Configuración personal',
+        title: 'Ajustes',
+        description: 'Personaliza tu experiencia de estudio, revisa tus preferencias y encuentra accesos rápidos de soporte.',
+        notificationsButton: 'Abrir centro de notificaciones',
+        editAvatar: 'Editar avatar',
+        editProfile: 'Editar perfil',
+        studySpaceTitle: 'Tu espacio de estudio',
+        studySpaceDescription: 'Hemos reunido en una sola vista los ajustes que más utilizas.',
+        profileStatLabel: 'Perfil',
+        profileStatValue: 'Listo para personalizar',
+        preferencesStatLabel: 'Preferencias',
+        preferencesStatValue: 'Vista previa activa',
+        securityStatLabel: 'Seguridad',
+        securityStatValue: 'Accesos rápidos disponibles',
+        notificationsTitle: 'Notificaciones',
+        notificationsDescription: 'Configura cómo quieres recibir información sobre tu actividad diaria sin tocar aún la lógica real.',
+        pushNotifications: 'Notificaciones push',
+        pushNotificationsDescription: 'Avisos visuales sobre novedades, resultados y recordatorios importantes.',
+        dailyReminders: 'Recordatorios diarios',
+        dailyRemindersDescription: 'Pequeño empujón diario para mantener la racha de estudio activa.',
+        appearanceTitle: 'Apariencia',
+        appearanceDescription: 'Detalles visuales generales para adaptar la interfaz a tu contexto de uso.',
+        languageTitle: 'Idioma',
+        languageDescription: 'Elegí el idioma que se usa en la interfaz visible.',
+        languageSelectorLabel: 'Idioma de la aplicación',
+        securityTitle: 'Seguridad y privacidad',
+        securityDescription: 'Accesos rápidos a opciones sensibles y documentación clave de la cuenta.',
+        changePassword: 'Cambiar contraseña',
+        changePasswordDescription: 'Actualiza tu acceso cuando la opción esté habilitada',
+        privacyPolicy: 'Política de privacidad',
+        privacyPolicyDescription: 'Cómo tratamos y protegemos tus datos',
+        terms: 'Términos y condiciones',
+        termsDescription: 'Condiciones generales del uso de la plataforma',
+        helpTitle: 'Ayuda y soporte',
+        helpDescription: 'Vías rápidas para resolver dudas y enviar sugerencias sobre la experiencia.',
+        helpCenter: 'Centro de ayuda',
+        helpCenterDescription: 'Guías y respuestas frecuentes para estudiar mejor',
+        contactSupport: 'Contactar soporte',
+        contactSupportDescription: 'Canal directo para incidencias o consultas',
+        sendFeedback: 'Enviar feedback',
+        sendFeedbackDescription: 'Compartí ideas para mejorar futuras versiones',
+        appVersion: 'Versión de la app',
+        logoutDescription: 'La sesión se cierra con el flujo real actual de autenticación.',
+        logout: 'Cerrar sesión',
+        modalTitle: 'Cambiar contraseña',
+        modalDescription: 'Actualizá tu contraseña real con validación segura en frontend y backend.',
+        closeModal: 'Cerrar modal',
+        currentPassword: 'Contraseña actual',
+        newPassword: 'Nueva contraseña',
+        confirmPassword: 'Confirmar nueva contraseña',
+        minimumPassword: `Mínimo ${MIN_PASSWORD_LENGTH} caracteres.`,
+        cancel: 'Cancelar',
+        saving: 'Guardando...',
+        saveChanges: 'Guardar cambios',
+        preview: 'Vista previa',
+        emailLabel: 'Email',
+        phoneLabel: 'Teléfono',
+        schoolLabel: 'Autoescuela',
+        emailUnavailable: 'Sin email disponible',
+        phoneUnavailable: 'Sin teléfono añadido aún',
+        schoolPending: 'Centro pendiente de asignación',
+        linkedSchool: 'Centro vinculado',
+        activeMembership: 'Membresía activa',
+        pendingAccount: 'Cuenta pendiente',
+        profileFallback: 'Estudiante DriveMind',
+      }
 
   const profile = useMemo(() => {
-    const fullName = user?.full_name?.trim() || 'Estudiante DriveMind'
+    const fullName = user?.full_name?.trim() || copy.profileFallback
     const initials = fullName
       .split(' ')
       .filter(Boolean)
@@ -122,13 +258,13 @@ export function SettingsPage() {
     return {
       fullName,
       initials: initials || 'DM',
-      role: formatRole(user?.role),
-      membership: user?.is_active ? 'Membresía activa' : 'Cuenta pendiente',
-      email: user?.email || 'Sin email disponible',
-      phone: 'Sin teléfono añadido aún',
-      school: user?.school_id ? `Centro vinculado · ${user.school_id}` : 'Centro pendiente de asignación',
+      role: formatRole(user?.role, language),
+      membership: user?.is_active ? copy.activeMembership : copy.pendingAccount,
+      email: user?.email || copy.emailUnavailable,
+      phone: copy.phoneUnavailable,
+      school: user?.school_id ? `${copy.linkedSchool} · ${user.school_id}` : copy.schoolPending,
     }
-  }, [user])
+  }, [copy.activeMembership, copy.emailUnavailable, copy.linkedSchool, copy.pendingAccount, copy.phoneUnavailable, copy.profileFallback, copy.schoolPending, language, user])
 
   useEffect(() => {
     if (!isPasswordModalOpen) {
@@ -187,21 +323,23 @@ export function SettingsPage() {
     const errors: PasswordFormErrors = {}
 
     if (!values.currentPassword.trim()) {
-      errors.currentPassword = 'Ingresá tu contraseña actual.'
+      errors.currentPassword = language === 'en' ? 'Enter your current password.' : 'Ingresá tu contraseña actual.'
     }
 
     if (!values.newPassword) {
-      errors.newPassword = 'Ingresá una nueva contraseña.'
+      errors.newPassword = language === 'en' ? 'Enter a new password.' : 'Ingresá una nueva contraseña.'
     } else if (values.newPassword.length < MIN_PASSWORD_LENGTH) {
-      errors.newPassword = `La nueva contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.`
+      errors.newPassword = language === 'en'
+        ? `The new password must be at least ${MIN_PASSWORD_LENGTH} characters.`
+        : `La nueva contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.`
     } else if (values.newPassword === values.currentPassword) {
-      errors.newPassword = 'La nueva contraseña debe ser distinta de la actual.'
+      errors.newPassword = language === 'en' ? 'The new password must be different from the current one.' : 'La nueva contraseña debe ser distinta de la actual.'
     }
 
     if (!values.confirmPassword) {
-      errors.confirmPassword = 'Confirmá la nueva contraseña.'
+      errors.confirmPassword = language === 'en' ? 'Confirm the new password.' : 'Confirmá la nueva contraseña.'
     } else if (values.confirmPassword !== values.newPassword) {
-      errors.confirmPassword = 'Las contraseñas no coinciden.'
+      errors.confirmPassword = language === 'en' ? 'Passwords do not match.' : 'Las contraseñas no coinciden.'
     }
 
     return errors
@@ -227,13 +365,13 @@ export function SettingsPage() {
         newPassword: passwordValues.newPassword,
       })
 
-      setPasswordSuccessMessage('Contraseña actualizada correctamente.')
+      setPasswordSuccessMessage(language === 'en' ? 'Password updated successfully.' : 'Contraseña actualizada correctamente.')
 
       window.setTimeout(() => {
         closePasswordModal()
       }, 900)
     } catch (error) {
-      setPasswordSubmitError(resolvePasswordChangeErrorMessage(error))
+      setPasswordSubmitError(resolvePasswordChangeErrorMessage(error, language))
     } finally {
       setIsSubmittingPassword(false)
     }
@@ -251,15 +389,15 @@ export function SettingsPage() {
       <section aria-hidden={isPasswordModalOpen} className="grid gap-6 text-[#1E3A5F]">
       <header className="flex flex-col gap-4 rounded-[30px] border border-[#dce5ef] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(246,249,252,0.96))] p-6 shadow-[0_20px_45px_-30px_rgba(30,58,95,0.22)] md:flex-row md:items-start md:justify-between md:p-8">
         <div className="grid gap-2">
-          <p className="m-0 text-sm font-semibold tracking-[0.16em] uppercase text-[#2C5F8A]">Configuración personal</p>
-          <h1 className="m-0 text-[clamp(2rem,4vw,3rem)] leading-none">Ajustes</h1>
+          <p className="m-0 text-sm font-semibold tracking-[0.16em] uppercase text-[#2C5F8A]">{copy.pageEyebrow}</p>
+          <h1 className="m-0 text-[clamp(2rem,4vw,3rem)] leading-none">{copy.title}</h1>
           <p className="m-0 max-w-3xl text-sm text-[#5f7287] md:text-base">
-            Personaliza tu experiencia de estudio, revisa tus preferencias y encuentra accesos rápidos de soporte.
+            {copy.description}
           </p>
         </div>
 
         <button
-          aria-label="Abrir centro de notificaciones"
+          aria-label={copy.notificationsButton}
           className="inline-flex size-12 items-center justify-center rounded-full border border-[#dbe4ee] bg-white text-[#7c3aed] shadow-[0_16px_30px_-24px_rgba(124,58,237,0.4)] transition-transform duration-200 hover:-translate-y-0.5"
           type="button"
         >
@@ -276,7 +414,7 @@ export function SettingsPage() {
                   {profile.initials}
                 </div>
                 <button
-                  aria-label="Editar avatar"
+                  aria-label={copy.editAvatar}
                   className="absolute -right-1 -bottom-1 inline-flex size-8 items-center justify-center rounded-full border-4 border-white bg-[#1E3A5F] text-white shadow-[0_16px_24px_-16px_rgba(30,58,95,0.6)]"
                   type="button"
                 >
@@ -294,14 +432,14 @@ export function SettingsPage() {
             </div>
 
             <Button className="sm:w-auto" type="button" variant="secondary">
-              Editar perfil
+              {copy.editProfile}
             </Button>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3">
-            <DetailItem icon={<Mail className="size-4" strokeWidth={1.9} />} label="Email" value={profile.email} />
-            <DetailItem icon={<Phone className="size-4" strokeWidth={1.9} />} label="Teléfono" value={profile.phone} />
-            <DetailItem icon={<UserRound className="size-4" strokeWidth={1.9} />} label="Autoescuela" value={profile.school} />
+            <DetailItem icon={<Mail className="size-4" strokeWidth={1.9} />} label={copy.emailLabel} value={profile.email} />
+            <DetailItem icon={<Phone className="size-4" strokeWidth={1.9} />} label={copy.phoneLabel} value={profile.phone} />
+            <DetailItem icon={<UserRound className="size-4" strokeWidth={1.9} />} label={copy.schoolLabel} value={profile.school} />
           </div>
         </div>
 
@@ -311,15 +449,15 @@ export function SettingsPage() {
               <Sparkles className="size-5" strokeWidth={1.9} />
             </SoftIcon>
             <div>
-              <h3 className="m-0 text-lg">Tu espacio de estudio</h3>
-              <p className="m-0 text-sm text-[#5f7287]">Hemos reunido en una sola vista los ajustes que más utilizas.</p>
+              <h3 className="m-0 text-lg">{copy.studySpaceTitle}</h3>
+              <p className="m-0 text-sm text-[#5f7287]">{copy.studySpaceDescription}</p>
             </div>
           </div>
 
           <div className="grid gap-3 rounded-[22px] border border-white bg-white p-4 shadow-[0_16px_30px_-26px_rgba(30,58,95,0.35)]">
-            <InlineStat label="Perfil" value="Listo para personalizar" />
-            <InlineStat label="Preferencias" value="Vista previa activa" />
-            <InlineStat label="Seguridad" value="Accesos rápidos disponibles" />
+            <InlineStat label={copy.profileStatLabel} value={copy.profileStatValue} />
+            <InlineStat label={copy.preferencesStatLabel} value={copy.preferencesStatValue} />
+            <InlineStat label={copy.securityStatLabel} value={copy.securityStatValue} />
           </div>
         </div>
       </Card>
@@ -327,103 +465,129 @@ export function SettingsPage() {
       <div className="grid gap-6 xl:grid-cols-2">
         <SettingsCard
           accent="purple"
-          description="Configura cómo quieres recibir información sobre tu actividad diaria sin tocar aún la lógica real."
+          description={copy.notificationsDescription}
           icon={<Bell className="size-5" strokeWidth={1.9} />}
-          title="Notificaciones"
+          previewLabel={copy.preview}
+          title={copy.notificationsTitle}
         >
           <div className="-mt-2 grid gap-3">
             <ToggleRow
               accent="purple"
               checked={pushNotifications}
-              description="Avisos visuales sobre novedades, resultados y recordatorios importantes."
+              description={copy.pushNotificationsDescription}
               onToggle={() => setPushNotifications((value) => !value)}
-              title="Notificaciones push"
+              title={copy.pushNotifications}
             />
             <ToggleRow
               accent="purple"
               checked={dailyReminders}
-              description="Pequeño empujón diario para mantener la racha de estudio activa."
+              description={copy.dailyRemindersDescription}
               onToggle={() => setDailyReminders((value) => !value)}
-              title="Recordatorios diarios"
+              title={copy.dailyReminders}
             />
           </div>
         </SettingsCard>
         <SettingsCard
           accent="orange"
-          description="Detalles visuales generales para adaptar la interfaz a tu contexto de uso."
+          description={copy.appearanceDescription}
           icon={<Palette className="size-5" strokeWidth={1.9} />}
-          title="Apariencia"
+          previewLabel={copy.preview}
+          title={copy.appearanceTitle}
         >
-          <ToggleRow
-            accent="orange"
-            checked={darkMode}
-            description="Preview de un futuro modo oscuro. Por ahora el diseño sigue en tema claro."
-            onToggle={() => setDarkMode((value) => !value)}
-            title="Modo oscuro"
-          />
+          <div className="rounded-[22px] border border-[#e7edf4] bg-[#fbfdff] p-4">
+            <div className="flex items-start gap-4">
+              <span className="inline-flex size-11 items-center justify-center rounded-2xl" style={{ backgroundColor: '#dd8a1714', color: '#dd8a17' }}>
+                <Globe className="size-5" strokeWidth={1.9} />
+              </span>
+              <div className="grid flex-1 gap-3">
+                <div className="grid gap-1">
+                  <span className="font-semibold text-[#1E3A5F]">{copy.languageTitle}</span>
+                  <span className="text-sm text-[#5f7287]">{copy.languageDescription}</span>
+                </div>
+                <div aria-label={copy.languageSelectorLabel} className="grid gap-2 sm:grid-cols-2" role="group">
+                  {(['es', 'en'] as const).map((option) => {
+                    const selected = language === option
 
-          <ActionRow
-            accent="#dd8a17"
-            description="Valor actual de la interfaz"
-            icon={<Globe className="size-5" strokeWidth={1.9} />}
-            title="Idioma"
-            value="Español"
-          />
+                    return (
+                      <button
+                        key={option}
+                        aria-pressed={selected}
+                        className={clsx(
+                          'rounded-2xl border px-4 py-3 text-left text-sm font-semibold transition-colors',
+                          selected
+                            ? 'border-[#dd8a17] bg-[#fff7ef] text-[#b76806]'
+                            : 'border-[#dce5ef] bg-white text-[#5f7287] hover:border-[#dd8a17] hover:text-[#b76806]',
+                        )}
+                        onClick={() => setLanguage(option)}
+                        type="button"
+                      >
+                        {getLanguageLabel(option)}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
         </SettingsCard>
 
         <SettingsCard
           accent="blue"
-          description="Accesos rápidos a opciones sensibles y documentación clave de la cuenta."
+          description={copy.securityDescription}
           icon={<Shield className="size-5" strokeWidth={1.9} />}
-          title="Seguridad y privacidad"
+          previewLabel={copy.preview}
+          title={copy.securityTitle}
         >
           <ActionRow
             accent="#2453d0"
-            description="Actualiza tu acceso cuando la opción esté habilitada"
+            description={copy.changePasswordDescription}
             icon={<Lock className="size-5" strokeWidth={1.9} />}
             onClick={openPasswordModal}
-            title="Cambiar contraseña"
+            title={copy.changePassword}
           />
           <ActionRow
             accent="#2453d0"
-            description="Cómo tratamos y protegemos tus datos"
+            description={copy.privacyPolicyDescription}
             icon={<Shield className="size-5" strokeWidth={1.9} />}
             onClick={() => navigate('/settings/privacy-policy')}
-            title="Política de privacidad"
+            title={copy.privacyPolicy}
           />
           <ActionRow
             accent="#2453d0"
-            description="Condiciones generales del uso de la plataforma"
+            description={copy.termsDescription}
             icon={<Mail className="size-5" strokeWidth={1.9} />}
             onClick={() => navigate('/settings/terms-and-conditions')}
-            title="Términos y condiciones"
+            title={copy.terms}
           />
         </SettingsCard>
 
         <SettingsCard
           accent="gray"
-          description="Vías rápidas para resolver dudas y enviar sugerencias sobre la experiencia."
+          description={copy.helpDescription}
           icon={<HelpCircle className="size-5" strokeWidth={1.9} />}
-          title="Ayuda y soporte"
+          previewLabel={copy.preview}
+          title={copy.helpTitle}
         >
           <ActionRow
             accent="#5f7287"
-            description="Guías y respuestas frecuentes para estudiar mejor"
+            description={copy.helpCenterDescription}
             icon={<HelpCircle className="size-5" strokeWidth={1.9} />}
             onClick={() => navigate('/settings/help-center')}
-            title="Centro de ayuda"
+            title={copy.helpCenter}
           />
           <ActionRow
             accent="#5f7287"
-            description="Canal directo para incidencias o consultas"
+            description={copy.contactSupportDescription}
             icon={<Mail className="size-5" strokeWidth={1.9} />}
-            title="Contactar soporte"
+            onClick={() => navigate('/settings/contact-support')}
+            title={copy.contactSupport}
           />
           <ActionRow
             accent="#5f7287"
-            description="Compartí ideas para mejorar futuras versiones"
+            description={copy.sendFeedbackDescription}
             icon={<Volume2 className="size-5" strokeWidth={1.9} />}
-            title="Enviar feedback"
+            onClick={() => navigate('/settings/send-feedback')}
+            title={copy.sendFeedback}
           />
         </SettingsCard>
       </div>
@@ -431,10 +595,10 @@ export function SettingsPage() {
       <Card as="section" className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between md:p-7">
         <div className="grid gap-2">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-semibold uppercase tracking-[0.12em] text-[#5f7287]">Versión de la app</span>
+            <span className="text-sm font-semibold uppercase tracking-[0.12em] text-[#5f7287]">{copy.appVersion}</span>
             <Badge className="bg-[#eef2f6] text-[#5f7287]" label="v0.0.0" variant="default" />
           </div>
-          <p className="m-0 text-sm text-[#5f7287]">La sesión se cierra con el flujo real actual de autenticación.</p>
+          <p className="m-0 text-sm text-[#5f7287]">{copy.logoutDescription}</p>
         </div>
 
         <Button
@@ -445,7 +609,7 @@ export function SettingsPage() {
         >
           <span className="inline-flex items-center gap-2">
             <LogOut className="size-4" strokeWidth={2} />
-            Cerrar sesión
+            {copy.logout}
           </span>
         </Button>
       </Card>
@@ -473,13 +637,13 @@ export function SettingsPage() {
                   <Lock className="size-6" strokeWidth={1.9} />
                 </span>
                 <div>
-                  <h2 className="m-0 text-2xl" id="change-password-modal-title">Cambiar contraseña</h2>
-                  <p className="mt-1 mb-0 text-sm text-[#5f7287]">Actualizá tu contraseña real con validación segura en frontend y backend.</p>
+                  <h2 className="m-0 text-2xl" id="change-password-modal-title">{copy.modalTitle}</h2>
+                  <p className="mt-1 mb-0 text-sm text-[#5f7287]">{copy.modalDescription}</p>
                 </div>
               </div>
 
               <button
-                aria-label="Cerrar modal"
+                aria-label={copy.closeModal}
                 className="inline-flex size-10 items-center justify-center rounded-full border border-[#dbe4ee] bg-white text-[#5f7287] transition-colors hover:bg-[#f5f8fb]"
                 disabled={isSubmittingPassword}
                 onClick={closePasswordModal}
@@ -494,34 +658,40 @@ export function SettingsPage() {
                 autoComplete="current-password"
                 error={passwordErrors.currentPassword}
                 id="currentPassword"
-                label="Contraseña actual"
+                label={copy.currentPassword}
                 onChange={(value) => updatePasswordField('currentPassword', value)}
                 onToggleVisibility={() => togglePasswordVisibility('currentPassword')}
+                showLabel={language === 'en' ? 'Show' : 'Mostrar'}
                 value={passwordValues.currentPassword}
                 visible={passwordVisibility.currentPassword}
+                hideLabel={language === 'en' ? 'Hide' : 'Ocultar'}
               />
 
               <PasswordField
                 autoComplete="new-password"
                 error={passwordErrors.newPassword}
-                hint={`Mínimo ${MIN_PASSWORD_LENGTH} caracteres.`}
+                hint={copy.minimumPassword}
                 id="newPassword"
-                label="Nueva contraseña"
+                label={copy.newPassword}
                 onChange={(value) => updatePasswordField('newPassword', value)}
                 onToggleVisibility={() => togglePasswordVisibility('newPassword')}
+                showLabel={language === 'en' ? 'Show' : 'Mostrar'}
                 value={passwordValues.newPassword}
                 visible={passwordVisibility.newPassword}
+                hideLabel={language === 'en' ? 'Hide' : 'Ocultar'}
               />
 
               <PasswordField
                 autoComplete="new-password"
                 error={passwordErrors.confirmPassword}
                 id="confirmPassword"
-                label="Confirmar nueva contraseña"
+                label={copy.confirmPassword}
                 onChange={(value) => updatePasswordField('confirmPassword', value)}
                 onToggleVisibility={() => togglePasswordVisibility('confirmPassword')}
+                showLabel={language === 'en' ? 'Show' : 'Mostrar'}
                 value={passwordValues.confirmPassword}
                 visible={passwordVisibility.confirmPassword}
+                hideLabel={language === 'en' ? 'Hide' : 'Ocultar'}
               />
 
               {passwordSubmitError ? (
@@ -534,12 +704,12 @@ export function SettingsPage() {
 
               <div className="mt-2 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                 <Button disabled={isSubmittingPassword} onClick={closePasswordModal} type="button" variant="secondary">
-                  Cancelar
+                  {copy.cancel}
                 </Button>
                 <Button className="min-w-40" disabled={isSubmittingPassword} type="submit" variant="primary">
                   <span className="inline-flex items-center justify-center gap-2">
                     {isSubmittingPassword ? <LoaderCircle className="size-4 animate-spin" strokeWidth={2} /> : null}
-                    {isSubmittingPassword ? 'Guardando...' : 'Guardar cambios'}
+                    {isSubmittingPassword ? copy.saving : copy.saveChanges}
                   </span>
                 </Button>
               </div>
@@ -559,6 +729,8 @@ function PasswordField({
   hint,
   visible,
   autoComplete,
+  showLabel,
+  hideLabel,
   onChange,
   onToggleVisibility,
 }: {
@@ -569,6 +741,8 @@ function PasswordField({
   hint?: string
   visible: boolean
   autoComplete: string
+  showLabel: string
+  hideLabel: string
   onChange: (value: string) => void
   onToggleVisibility: () => void
 }) {
@@ -592,7 +766,7 @@ function PasswordField({
           value={value}
         />
         <button
-          aria-label={visible ? `Ocultar ${label.toLowerCase()}` : `Mostrar ${label.toLowerCase()}`}
+          aria-label={visible ? `${hideLabel} ${label.toLowerCase()}` : `${showLabel} ${label.toLowerCase()}`}
           className="ml-3 inline-flex size-9 items-center justify-center rounded-full text-[#5f7287] transition-colors hover:bg-[#eef4ff] hover:text-[#2453d0]"
           onClick={onToggleVisibility}
           type="button"
@@ -610,12 +784,14 @@ function SettingsCard({
   title,
   description,
   icon,
+  previewLabel,
   children,
 }: {
   accent: keyof typeof accentStyles
   title: string
   description: string
   icon: ReactNode
+  previewLabel: string
   children: ReactNode
 }) {
   return (
@@ -626,7 +802,7 @@ function SettingsCard({
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="m-0 text-xl">{title}</h2>
             <span className={clsx('rounded-full px-2.5 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.12em]', accentStyles[accent].badge)}>
-              Vista previa
+              {previewLabel}
             </span>
           </div>
           <p className="m-0 text-sm text-[#5f7287]">{description}</p>
@@ -715,38 +891,44 @@ function InlineStat({ label, value }: { label: string; value: string }) {
   )
 }
 
-function formatRole(role?: string | null) {
+function formatRole(role: string | null | undefined, language: 'es' | 'en') {
   switch (role) {
     case 'student':
-      return 'Alumno'
+      return language === 'en' ? 'Student' : 'Alumno'
     case 'school_admin':
-      return 'Administrador'
+      return language === 'en' ? 'Administrator' : 'Administrador'
     case 'system_admin':
-      return 'Admin sistema'
+      return language === 'en' ? 'System admin' : 'Admin sistema'
     default:
-      return 'Estudiante'
+      return language === 'en' ? 'Student' : 'Estudiante'
   }
 }
 
-function resolvePasswordChangeErrorMessage(error: unknown) {
+function resolvePasswordChangeErrorMessage(error: unknown, language: 'es' | 'en') {
   if (error instanceof ApiError) {
     switch (error.message) {
       case 'invalid_current_password':
-        return 'La contraseña actual no es correcta.'
+        return language === 'en' ? 'The current password is incorrect.' : 'La contraseña actual no es correcta.'
       case 'password_too_short':
-        return `La nueva contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.`
+        return language === 'en'
+          ? `The new password must be at least ${MIN_PASSWORD_LENGTH} characters.`
+          : `La nueva contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.`
       case 'password_must_be_different':
-        return 'La nueva contraseña debe ser distinta de la actual.'
+        return language === 'en' ? 'The new password must be different from the current one.' : 'La nueva contraseña debe ser distinta de la actual.'
       case 'user_not_found':
-        return 'No pudimos encontrar tu usuario autenticado.'
+        return language === 'en' ? 'We could not find your authenticated user.' : 'No pudimos encontrar tu usuario autenticado.'
       default:
-        return error.message || 'No pudimos cambiar la contraseña.'
+        return error.message || (language === 'en' ? 'We could not change the password.' : 'No pudimos cambiar la contraseña.')
     }
   }
 
   if (error instanceof Error && error.message) {
+    if (error.message === 'session_expired') {
+      return language === 'en' ? 'Your session expired. Sign in again.' : 'Tu sesión expiró. Iniciá sesión de nuevo.'
+    }
+
     return error.message
   }
 
-  return 'No pudimos cambiar la contraseña.'
+  return language === 'en' ? 'We could not change the password.' : 'No pudimos cambiar la contraseña.'
 }

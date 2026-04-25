@@ -1,3 +1,4 @@
+import type { Language } from '../i18n'
 import type { TestMode } from './types'
 
 export function formatElapsedTime(totalSeconds: number) {
@@ -12,20 +13,20 @@ export function formatElapsedTime(totalSeconds: number) {
   return [minutes, seconds].map((value) => String(value).padStart(2, '0')).join(':')
 }
 
-export function getModeBadge(mode: TestMode, testLabel: string) {
+export function getModeBadge(mode: TestMode, testLabel: string, language: Language) {
   switch (mode) {
     case 'TOPIC':
       return testLabel
     case 'FAILED':
-      return 'Preguntas falladas'
+      return language === 'en' ? 'Failed questions' : 'Preguntas falladas'
     case 'RANDOM':
-      return 'Test aleatorio'
+      return language === 'en' ? 'Random test' : 'Test aleatorio'
     case 'PERMIT':
     default:
-      return 'Test por licencia'
+      return language === 'en' ? 'Permit test' : 'Test por permiso'
   }
 }
 
-export function formatAccuracy(value: number) {
-  return `${new Intl.NumberFormat('es-ES', { maximumFractionDigits: 1 }).format(value)}%`
+export function formatAccuracy(value: number, language: Language) {
+  return `${new Intl.NumberFormat(language === 'en' ? 'en-US' : 'es-ES', { maximumFractionDigits: 1 }).format(value)}%`
 }

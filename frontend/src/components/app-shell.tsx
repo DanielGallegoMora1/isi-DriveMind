@@ -1,26 +1,46 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../features/auth'
+import { formatRole, useI18n } from '../features/i18n'
 import { LogOut } from 'lucide-react'
 import { AiChatIcon, HomeIcon, SettingsIcon, StatsIcon, TestsIcon } from './icons'
 import { Button } from './ui/button'
 
-const navigationItems = [
-  { to: '/', label: 'Inicio', icon: HomeIcon },
-  { to: '/ai-chat', label: 'Asistente IA de DriveMind', icon: AiChatIcon },
-  { to: '/tests', label: 'Mis Tests', icon: TestsIcon },
-  { to: '/stats', label: 'Estadísticas', icon: StatsIcon },
-  { to: '/settings', label: 'Ajustes', icon: SettingsIcon },
-]
-
 export function AppShell() {
   const { logout, user } = useAuth()
+  const { language } = useI18n()
   const initials = (user?.full_name ?? 'DM')
     .split(' ')
     .filter(Boolean)
     .slice(0, 2)
     .map((chunk) => chunk[0]?.toUpperCase() ?? '')
     .join('')
-  const subtitle = `${formatRole(user?.role)} · Permiso B`
+  const navigationItems = language === 'en'
+    ? [
+        { to: '/', label: 'Home', icon: HomeIcon },
+        { to: '/ai-chat', label: 'DriveMind AI Assistant', icon: AiChatIcon },
+        { to: '/tests', label: 'My Tests', icon: TestsIcon },
+        { to: '/stats', label: 'Statistics', icon: StatsIcon },
+        { to: '/settings', label: 'Settings', icon: SettingsIcon },
+      ]
+    : [
+        { to: '/', label: 'Inicio', icon: HomeIcon },
+        { to: '/ai-chat', label: 'Asistente IA de DriveMind', icon: AiChatIcon },
+        { to: '/tests', label: 'Mis Tests', icon: TestsIcon },
+        { to: '/stats', label: 'Estadísticas', icon: StatsIcon },
+        { to: '/settings', label: 'Ajustes', icon: SettingsIcon },
+      ]
+  const subtitle = `${formatRole(user?.role, language)} · ${language === 'en' ? 'Permit B' : 'Permiso B'}`
+  const copy = language === 'en'
+    ? {
+        title: 'Student dashboard',
+        description: 'Your daily panel to practice, review progress, and keep your streak alive.',
+        logout: 'Log out',
+      }
+    : {
+        title: 'Panel del alumno',
+        description: 'Tu panel diario para practicar, revisar el progreso y mantener la racha.',
+        logout: 'Cerrar sesión',
+      }
 
   return (
     <div className="min-h-svh bg-[#F5F7FA] text-[#1E3A5F] lg:grid lg:grid-cols-[280px_1fr]">
@@ -30,8 +50,8 @@ export function AppShell() {
         <div className="grid gap-8">
           <div>
             <p className="m-0 text-[0.78rem] font-bold tracking-[0.18em] uppercase text-[#2C5F8A]">DriveMind</p>
-            <h1 className="my-3 text-[2rem] leading-none text-[#1E3A5F]">Panel del alumno</h1>
-            <p className="m-0 text-sm text-[#5f7287]">Tu panel diario para practicar, revisar el progreso y mantener la racha.</p>
+            <h1 className="my-3 text-[2rem] leading-none text-[#1E3A5F]">{copy.title}</h1>
+            <p className="m-0 text-sm text-[#5f7287]">{copy.description}</p>
           </div>
 
           <nav className="grid gap-2.5">
@@ -68,7 +88,7 @@ export function AppShell() {
           <Button className="w-full bg-[#c94b59] text-white hover:bg-[#b53c4a]" variant="primary" onClick={logout} type="button">
             <span className="inline-flex items-center gap-2">
               <LogOut className="size-4" strokeWidth={2} />
-              Cerrar sesión
+              {copy.logout}
             </span>
           </Button>
         </div>
@@ -79,17 +99,4 @@ export function AppShell() {
       </main>
     </div>
   )
-}
-
-function formatRole(role?: string | null) {
-  switch (role) {
-    case 'student':
-      return 'Alumno'
-    case 'school_admin':
-      return 'Administrador'
-    case 'system_admin':
-      return 'Admin sistema'
-    default:
-      return role ?? 'Usuario'
-  }
 }

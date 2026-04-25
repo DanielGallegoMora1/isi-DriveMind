@@ -3,46 +3,103 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { AuthContext, type AuthContextValue } from '../features/auth/auth-context'
-import { SettingsPage } from './settings-page'
+import { I18nProvider, type Language } from '../features/i18n'
+import { renderWithProviders } from '../test/utils'
+import { ContactSupportPage } from './contact-support-page'
 import { HelpCenterPage } from './help-center-page'
 import { PrivacyPolicyPage } from './privacy-policy-page'
+import { SendFeedbackPage } from './send-feedback-page'
+import { SettingsPage } from './settings-page'
 import { TermsAndConditionsPage } from './terms-and-conditions-page'
-import { renderWithProviders } from '../test/utils'
+
+function createAuthValue(overrides?: Partial<AuthContextValue>): AuthContextValue {
+  return {
+    accessToken: 'demo-token',
+    changePassword: async () => undefined,
+    isAuthenticated: true,
+    isLoading: false,
+    login: async () => undefined,
+    logout: vi.fn(),
+    user: {
+      id: 'user-2',
+      email: 'alumna@drivemind.test',
+      full_name: 'Lucía Pérez',
+      role: 'student',
+      school_id: null,
+      is_active: true,
+      created_at: null,
+      updated_at: null,
+    },
+    ...overrides,
+  }
+}
+
+function renderSettingsRoutes(language: Language = 'es', authOverrides?: Partial<AuthContextValue>) {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  })
+
+  return render(
+    <MemoryRouter initialEntries={['/settings']}>
+      <QueryClientProvider client={queryClient}>
+        <I18nProvider initialLanguage={language}>
+          <AuthContext.Provider value={createAuthValue(authOverrides)}>
+            <Routes>
+              <Route element={<SettingsPage />} path="/settings" />
+              <Route element={<HelpCenterPage />} path="/settings/help-center" />
+              <Route element={<ContactSupportPage />} path="/settings/contact-support" />
+              <Route element={<SendFeedbackPage />} path="/settings/send-feedback" />
+              <Route element={<PrivacyPolicyPage />} path="/settings/privacy-policy" />
+              <Route element={<TermsAndConditionsPage />} path="/settings/terms-and-conditions" />
+            </Routes>
+          </AuthContext.Provider>
+        </I18nProvider>
+      </QueryClientProvider>
+    </MemoryRouter>,
+  )
+}
 
 describe('SettingsPage', () => {
-  it('renderiza la vista de ajustes del alumno con fallbacks y usa el logout real del contexto', async () => {
+  it('renders the student settings view and executes logout from context', async () => {
     const user = userEvent.setup()
     const logout = vi.fn()
 
-    renderWithProviders(<SettingsPage />, {
-      logout,
-      user: {
-        id: 'user-2',
-        email: 'alumna@drivemind.test',
-        full_name: 'Lucía Pérez',
-        role: 'student',
-        school_id: null,
-        is_active: true,
-        created_at: null,
-        updated_at: null,
+    renderWithProviders(
+      <SettingsPage />,
+      {
+        logout,
+        user: {
+          id: 'user-2',
+          email: 'alumna@drivemind.test',
+          full_name: 'Lucía Pérez',
+          role: 'student',
+          school_id: null,
+          is_active: true,
+          created_at: null,
+          updated_at: null,
+        },
       },
-    })
+      { language: 'en' },
+    )
 
-    expect(screen.getByRole('heading', { name: 'Ajustes' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Settings' })).toBeInTheDocument()
     expect(screen.getByText('Lucía Pérez')).toBeInTheDocument()
     expect(screen.getByText('alumna@drivemind.test')).toBeInTheDocument()
-    expect(screen.getByText('Centro pendiente de asignación')).toBeInTheDocument()
-    expect(screen.getByText('Notificaciones')).toBeInTheDocument()
-    expect(screen.getByText('Apariencia')).toBeInTheDocument()
-    expect(screen.getByText('Seguridad y privacidad')).toBeInTheDocument()
-    expect(screen.getByText('Ayuda y soporte')).toBeInTheDocument()
+    expect(screen.getByText('School pending assignment')).toBeInTheDocument()
+    expect(screen.getByText('Notifications')).toBeInTheDocument()
+    expect(screen.getByText('Appearance')).toBeInTheDocument()
+    expect(screen.getByText('Security and privacy')).toBeInTheDocument()
+    expect(screen.getByText('Help and support')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: /cerrar sesión/i }))
+    await user.click(screen.getByRole('button', { name: /log out/i }))
 
     expect(logout).toHaveBeenCalledTimes(1)
   })
 
-  it('muestra un fallback elegante cuando no hay datos completos de auth', () => {
+  it('shows elegant fallbacks when auth data is incomplete', () => {
     renderWithProviders(<SettingsPage />, { user: null })
 
     expect(screen.getByText('Estudiante DriveMind')).toBeInTheDocument()
@@ -50,200 +107,124 @@ describe('SettingsPage', () => {
     expect(screen.getByText('Sin teléfono añadido aún')).toBeInTheDocument()
   })
 
-  it('navega a la política de privacidad desde seguridad y privacidad', async () => {
+  it('switches language from settings and persists the selected option in visible UI', async () => {
     const user = userEvent.setup()
-    const queryClient = new QueryClient({
-      defaultOptions: {
-        queries: { retry: false },
-        mutations: { retry: false },
-      },
-    })
 
-    const authValue: AuthContextValue = {
-      accessToken: 'demo-token',
-      changePassword: async () => undefined,
-      isAuthenticated: true,
-      isLoading: false,
-      login: async () => undefined,
-      logout: vi.fn(),
-      user: {
-        id: 'user-2',
-        email: 'alumna@drivemind.test',
-        full_name: 'Lucía Pérez',
-        role: 'student',
-        school_id: null,
-        is_active: true,
-        created_at: null,
-        updated_at: null,
-      },
-    }
+    renderWithProviders(<SettingsPage />)
 
-    render(
-      <MemoryRouter initialEntries={['/settings']}>
-        <QueryClientProvider client={queryClient}>
-          <AuthContext.Provider value={authValue}>
-            <Routes>
-              <Route element={<SettingsPage />} path="/settings" />
-              <Route element={<PrivacyPolicyPage />} path="/settings/privacy-policy" />
-            </Routes>
-          </AuthContext.Provider>
-        </QueryClientProvider>
-      </MemoryRouter>,
-    )
+    expect(screen.getByRole('heading', { name: 'Ajustes' })).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: /política de privacidad/i }))
+    await user.click(screen.getByRole('button', { name: 'English' }))
 
-    expect(screen.getByRole('heading', { name: 'Política de privacidad' })).toBeInTheDocument()
-    expect(screen.getByText('Información sobre el tratamiento de tus datos')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Settings' })).toBeInTheDocument()
+    expect(screen.getByText('Choose the language used across the visible interface.')).toBeInTheDocument()
+    expect(window.localStorage.getItem('drivemind.language')).toBe('en')
   })
 
-  it('navega al centro de ayuda desde ayuda y soporte', async () => {
+  it('navigates to privacy policy from security and privacy', async () => {
     const user = userEvent.setup()
-    const queryClient = new QueryClient({
-      defaultOptions: {
-        queries: { retry: false },
-        mutations: { retry: false },
-      },
-    })
 
-    const authValue: AuthContextValue = {
-      accessToken: 'demo-token',
-      changePassword: async () => undefined,
-      isAuthenticated: true,
-      isLoading: false,
-      login: async () => undefined,
-      logout: vi.fn(),
-      user: {
-        id: 'user-2',
-        email: 'alumna@drivemind.test',
-        full_name: 'Lucía Pérez',
-        role: 'student',
-        school_id: null,
-        is_active: true,
-        created_at: null,
-        updated_at: null,
-      },
-    }
+    renderSettingsRoutes('en')
 
-    render(
-      <MemoryRouter initialEntries={['/settings']}>
-        <QueryClientProvider client={queryClient}>
-          <AuthContext.Provider value={authValue}>
-            <Routes>
-              <Route element={<SettingsPage />} path="/settings" />
-              <Route element={<HelpCenterPage />} path="/settings/help-center" />
-            </Routes>
-          </AuthContext.Provider>
-        </QueryClientProvider>
-      </MemoryRouter>,
-    )
+    await user.click(screen.getByRole('button', { name: /privacy policy/i }))
 
-    await user.click(screen.getByRole('button', { name: /centro de ayuda/i }))
-
-    expect(screen.getByRole('heading', { name: 'Centro de ayuda' })).toBeInTheDocument()
-    expect(screen.getAllByText('Cuenta y perfil')).toHaveLength(2)
+    expect(screen.getByRole('heading', { name: 'Privacy policy' })).toBeInTheDocument()
+    expect(screen.getByText('Information about how your data is processed')).toBeInTheDocument()
   })
 
-  it('navega a términos y condiciones desde seguridad y privacidad', async () => {
+  it('navigates to help center from help and support', async () => {
     const user = userEvent.setup()
-    const queryClient = new QueryClient({
-      defaultOptions: {
-        queries: { retry: false },
-        mutations: { retry: false },
-      },
-    })
 
-    const authValue: AuthContextValue = {
-      accessToken: 'demo-token',
-      changePassword: async () => undefined,
-      isAuthenticated: true,
-      isLoading: false,
-      login: async () => undefined,
-      logout: vi.fn(),
-      user: {
-        id: 'user-2',
-        email: 'alumna@drivemind.test',
-        full_name: 'Lucía Pérez',
-        role: 'student',
-        school_id: null,
-        is_active: true,
-        created_at: null,
-        updated_at: null,
-      },
-    }
+    renderSettingsRoutes('en')
 
-    render(
-      <MemoryRouter initialEntries={['/settings']}>
-        <QueryClientProvider client={queryClient}>
-          <AuthContext.Provider value={authValue}>
-            <Routes>
-              <Route element={<SettingsPage />} path="/settings" />
-              <Route element={<TermsAndConditionsPage />} path="/settings/terms-and-conditions" />
-            </Routes>
-          </AuthContext.Provider>
-        </QueryClientProvider>
-      </MemoryRouter>,
-    )
+    await user.click(screen.getByRole('button', { name: /help center/i }))
 
-    await user.click(screen.getByRole('button', { name: /términos y condiciones/i }))
-
-    expect(screen.getByRole('heading', { name: 'Términos y condiciones' })).toBeInTheDocument()
-    expect(screen.getByText('Normas de uso de la plataforma')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Help center' })).toBeInTheDocument()
+    expect(screen.getAllByText('Account and profile')).toHaveLength(2)
   })
 
-  it('abre el modal de cambiar contraseña, valida inline y ejecuta el cambio exitoso', async () => {
+  it('navigates to contact support from help and support', async () => {
+    const user = userEvent.setup()
+
+    renderSettingsRoutes('en')
+
+    await user.click(screen.getByRole('button', { name: /contact support/i }))
+
+    expect(screen.getByRole('heading', { name: 'Contact support' })).toBeInTheDocument()
+    expect(screen.getByText('Contact form')).toBeInTheDocument()
+  })
+
+  it('navigates to send feedback from help and support', async () => {
+    const user = userEvent.setup()
+
+    renderSettingsRoutes('en')
+
+    await user.click(screen.getByRole('button', { name: /send feedback/i }))
+
+    expect(screen.getByRole('heading', { name: 'Send feedback' })).toBeInTheDocument()
+    expect(screen.getByText('Your opinion matters')).toBeInTheDocument()
+  })
+
+  it('navigates to terms and conditions from security and privacy', async () => {
+    const user = userEvent.setup()
+
+    renderSettingsRoutes('en')
+
+    await user.click(screen.getByRole('button', { name: /terms and conditions/i }))
+
+    expect(screen.getByRole('heading', { name: 'Terms and conditions' })).toBeInTheDocument()
+    expect(screen.getByText('Rules for using the platform')).toBeInTheDocument()
+  })
+
+  it('opens the change password modal, validates inline, and completes successfully', async () => {
     const user = userEvent.setup()
     const changePassword = vi.fn().mockResolvedValue(undefined)
 
-    renderWithProviders(<SettingsPage />, { changePassword })
+    renderWithProviders(<SettingsPage />, { changePassword }, { language: 'en' })
 
-    await user.click(screen.getByRole('button', { name: /cambiar contraseña/i }))
+    await user.click(screen.getByRole('button', { name: /change password/i }))
 
-    const modal = screen.getByRole('dialog', { name: /cambiar contraseña/i })
+    const modal = screen.getByRole('dialog', { name: /change password/i })
     const modalQueries = within(modal)
 
-    await user.click(modalQueries.getByRole('button', { name: /guardar cambios/i }))
+    await user.click(modalQueries.getByRole('button', { name: /save changes/i }))
 
-    expect(modalQueries.getByText('Ingresá tu contraseña actual.')).toBeInTheDocument()
-    expect(modalQueries.getByText('Ingresá una nueva contraseña.')).toBeInTheDocument()
-    expect(modalQueries.getByText('Confirmá la nueva contraseña.')).toBeInTheDocument()
+    expect(modalQueries.getByText('Enter your current password.')).toBeInTheDocument()
+    expect(modalQueries.getByText('Enter a new password.')).toBeInTheDocument()
+    expect(modalQueries.getByText('Confirm the new password.')).toBeInTheDocument()
 
-    await user.type(modalQueries.getByLabelText(/^Contraseña actual$/i), 'ClaveActual123')
-    await user.type(modalQueries.getByLabelText(/^Nueva contraseña$/i), 'NuevaClave123')
-    await user.type(modalQueries.getByLabelText(/^Confirmar nueva contraseña$/i), 'NuevaClave123')
-
-    await user.click(modalQueries.getByRole('button', { name: /guardar cambios/i }))
+    await user.type(modalQueries.getByLabelText(/^Current password$/i), 'CurrentKey123')
+    await user.type(modalQueries.getByLabelText(/^New password$/i), 'NewPassword123')
+    await user.type(modalQueries.getByLabelText(/^Confirm new password$/i), 'NewPassword123')
+    await user.click(modalQueries.getByRole('button', { name: /save changes/i }))
 
     expect(changePassword).toHaveBeenCalledWith({
-      currentPassword: 'ClaveActual123',
-      newPassword: 'NuevaClave123',
+      currentPassword: 'CurrentKey123',
+      newPassword: 'NewPassword123',
     })
-    expect(modalQueries.getByText('Contraseña actualizada correctamente.')).toBeInTheDocument()
+    expect(modalQueries.getByText('Password updated successfully.')).toBeInTheDocument()
 
-    await waitFor(
-      () => {
-        expect(screen.queryByRole('dialog', { name: /cambiar contraseña/i })).not.toBeInTheDocument()
-      },
-      { timeout: 2000 },
-    )
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: /change password/i })).not.toBeInTheDocument()
+    }, { timeout: 2000 })
   })
 
-  it('muestra feedback si el backend rechaza la contraseña actual', async () => {
+  it('shows backend feedback when the current password is rejected', async () => {
     const user = userEvent.setup()
-    const changePassword = vi.fn().mockRejectedValue(new Error('La contraseña actual no es correcta.'))
+    const changePassword = vi.fn().mockRejectedValue(new Error('The current password is incorrect.'))
 
-    renderWithProviders(<SettingsPage />, { changePassword })
+    renderWithProviders(<SettingsPage />, { changePassword }, { language: 'en' })
 
-    await user.click(screen.getByRole('button', { name: /cambiar contraseña/i }))
+    await user.click(screen.getByRole('button', { name: /change password/i }))
 
-    const modal = screen.getByRole('dialog', { name: /cambiar contraseña/i })
+    const modal = screen.getByRole('dialog', { name: /change password/i })
     const modalQueries = within(modal)
 
-    await user.type(modalQueries.getByLabelText(/^Contraseña actual$/i), 'ClaveActual123')
-    await user.type(modalQueries.getByLabelText(/^Nueva contraseña$/i), 'NuevaClave123')
-    await user.type(modalQueries.getByLabelText(/^Confirmar nueva contraseña$/i), 'NuevaClave123')
-    await user.click(modalQueries.getByRole('button', { name: /guardar cambios/i }))
+    await user.type(modalQueries.getByLabelText(/^Current password$/i), 'CurrentKey123')
+    await user.type(modalQueries.getByLabelText(/^New password$/i), 'NewPassword123')
+    await user.type(modalQueries.getByLabelText(/^Confirm new password$/i), 'NewPassword123')
+    await user.click(modalQueries.getByRole('button', { name: /save changes/i }))
 
-    expect(await screen.findByText('La contraseña actual no es correcta.')).toBeInTheDocument()
+    expect(await screen.findByText('The current password is incorrect.')).toBeInTheDocument()
   })
 })

@@ -11,6 +11,7 @@ import {
   X,
 } from 'lucide-react'
 import { Card } from '../../../components/ui/card'
+import { useI18n } from '../../i18n'
 import { formatAccuracy, formatElapsedTime, getModeBadge } from '../test-session-helpers'
 import type { GeneratedTest, TestResult } from '../types'
 
@@ -53,12 +54,47 @@ export function TestResultScreen({
   onStartAnotherTest,
 }: TestResultScreenProps) {
   const appearance = result.passed ? resultAppearance.passed : resultAppearance.failed
+  const { language } = useI18n()
   const totalQuestions = test.questions.length
   const unansweredCount = result.review_items.length > 0
     ? result.review_items.filter((item) => item.is_answered === false).length
     : Math.max(totalQuestions - answeredCount, 0)
   const accuracy = totalQuestions > 0 ? (result.correct_count / totalQuestions) * 100 : 0
-  const statusTitle = result.passed ? 'Test superado' : 'Test no superado'
+  const copy = language === 'en'
+    ? {
+        passedCopy: 'Great job, keep it up',
+        failedCopy: 'Do not get discouraged, keep practicing and you will improve',
+        passedTitle: 'Test passed',
+        failedTitle: 'Test not passed',
+        correct: 'Correct',
+        wrong: 'Wrong',
+        unanswered: 'Unanswered',
+        accuracy: 'Accuracy rate',
+        time: 'Time',
+        type: 'Test type',
+        permit: 'Permit',
+        review: 'Review answers',
+        newTest: 'New test',
+        dashboard: 'Dashboard',
+      }
+    : {
+        passedCopy: resultAppearance.passed.copy,
+        failedCopy: resultAppearance.failed.copy,
+        passedTitle: 'Test superado',
+        failedTitle: 'Test no superado',
+        correct: 'Aciertos',
+        wrong: 'Fallos',
+        unanswered: 'Sin responder',
+        accuracy: 'Tasa de acierto',
+        time: 'Tiempo',
+        type: 'Tipo de test',
+        permit: 'Permiso',
+        review: 'Revisar respuestas',
+        newTest: 'Nuevo test',
+        dashboard: 'Dashboard',
+      }
+  const statusTitle = result.passed ? copy.passedTitle : copy.failedTitle
+  const statusDescription = result.passed ? copy.passedCopy : copy.failedCopy
 
   return (
     <Card as="section" className="overflow-hidden rounded-[32px] border-[#dfe7f0] p-0 shadow-[0_28px_55px_-38px_rgba(30,58,95,0.35)]">
@@ -69,29 +105,29 @@ export function TestResultScreen({
 
         <div className="grid gap-2">
           <h1 className={`m-0 text-[clamp(2rem,4vw,3.1rem)] leading-none ${appearance.accent}`}>{statusTitle}</h1>
-          <p className="m-0 text-sm text-[#5f7287] md:text-base">{appearance.copy}</p>
+          <p className="m-0 text-sm text-[#5f7287] md:text-base">{statusDescription}</p>
         </div>
 
       </div>
 
       <div className="grid gap-6 bg-white px-6 py-6 md:px-10 md:py-8">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <ResultMetric accent="green" icon={<Check aria-hidden="true" className="size-5" strokeWidth={2.2} />} label="Aciertos" value={String(result.correct_count)} />
-          <ResultMetric accent="red" icon={<X aria-hidden="true" className="size-5" strokeWidth={2.2} />} label="Fallos" value={String(result.wrong_count)} />
-          <ResultMetric accent="amber" icon={<TriangleAlert aria-hidden="true" className="size-5" strokeWidth={2} />} label="Sin responder" value={String(unansweredCount)} />
-          <ResultMetric accent="blue" icon={<Target aria-hidden="true" className="size-5" strokeWidth={2} />} label="Tasa de acierto" value={formatAccuracy(accuracy)} />
+          <ResultMetric accent="green" icon={<Check aria-hidden="true" className="size-5" strokeWidth={2.2} />} label={copy.correct} value={String(result.correct_count)} />
+          <ResultMetric accent="red" icon={<X aria-hidden="true" className="size-5" strokeWidth={2.2} />} label={copy.wrong} value={String(result.wrong_count)} />
+          <ResultMetric accent="amber" icon={<TriangleAlert aria-hidden="true" className="size-5" strokeWidth={2} />} label={copy.unanswered} value={String(unansweredCount)} />
+          <ResultMetric accent="blue" icon={<Target aria-hidden="true" className="size-5" strokeWidth={2} />} label={copy.accuracy} value={formatAccuracy(accuracy, language)} />
         </div>
 
         <div className="grid gap-2 border-t border-[#e7edf4] pt-4 text-sm text-[#5f7287] md:grid-cols-3 md:gap-4">
-          <MetaItem label="Tiempo" value={formatElapsedTime(elapsedSeconds)} />
-          <MetaItem label="Tipo de test" value={getModeBadge(test.mode, testLabel)} />
-          <MetaItem label="Permiso" value={permitLabel} />
+          <MetaItem label={copy.time} value={formatElapsedTime(elapsedSeconds)} />
+          <MetaItem label={copy.type} value={getModeBadge(test.mode, testLabel, language)} />
+          <MetaItem label={copy.permit} value={permitLabel} />
         </div>
 
         <div className="grid gap-3 md:grid-cols-3">
-          <ActionButton icon={<Eye aria-hidden="true" className="size-5" strokeWidth={2} />} label="Revisar respuestas" onClick={onReviewAnswers} variant="secondary" />
-          <ActionButton icon={<RotateCcw aria-hidden="true" className="size-5" strokeWidth={2} />} label="Nuevo test" onClick={onStartAnotherTest} variant="primary" />
-          <ActionButton icon={<House aria-hidden="true" className="size-5" strokeWidth={2} />} label="Dashboard" onClick={onBackToDashboard} variant="secondary" />
+          <ActionButton icon={<Eye aria-hidden="true" className="size-5" strokeWidth={2} />} label={copy.review} onClick={onReviewAnswers} variant="secondary" />
+          <ActionButton icon={<RotateCcw aria-hidden="true" className="size-5" strokeWidth={2} />} label={copy.newTest} onClick={onStartAnotherTest} variant="primary" />
+          <ActionButton icon={<House aria-hidden="true" className="size-5" strokeWidth={2} />} label={copy.dashboard} onClick={onBackToDashboard} variant="secondary" />
         </div>
       </div>
     </Card>

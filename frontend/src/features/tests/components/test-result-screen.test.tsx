@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { TestResultScreen } from './test-result-screen'
+import { I18nProvider } from '../../i18n'
 import type { GeneratedTest, TestResult } from '../types'
 
 const test: GeneratedTest = {
@@ -24,17 +25,37 @@ const test: GeneratedTest = {
 
 function renderResult(result: TestResult) {
   return render(
-    <TestResultScreen
-      onBackToDashboard={() => {}}
-      onReviewAnswers={() => {}}
-      onStartAnotherTest={() => {}}
-      answeredCount={28}
-      elapsedSeconds={125}
-      permitLabel="Permiso B"
-      result={result}
-      test={test}
-      testLabel="Test aleatorio"
-    />,
+    <I18nProvider>
+      <TestResultScreen
+        onBackToDashboard={() => {}}
+        onReviewAnswers={() => {}}
+        onStartAnotherTest={() => {}}
+        answeredCount={28}
+        elapsedSeconds={125}
+        permitLabel="Permiso B"
+        result={result}
+        test={test}
+        testLabel="Test aleatorio"
+      />
+    </I18nProvider>,
+  )
+}
+
+function renderResultInEnglish(result: TestResult) {
+  return render(
+    <I18nProvider initialLanguage="en">
+      <TestResultScreen
+        onBackToDashboard={() => {}}
+        onReviewAnswers={() => {}}
+        onStartAnotherTest={() => {}}
+        answeredCount={28}
+        elapsedSeconds={125}
+        permitLabel="Permit B"
+        result={result}
+        test={test}
+        testLabel="Random test"
+      />
+    </I18nProvider>,
   )
 }
 
@@ -93,5 +114,32 @@ describe('TestResultScreen', () => {
     expect(screen.getByText('Fallos')).toBeInTheDocument()
     expect(screen.getByText('8')).toBeInTheDocument()
     expect(screen.queryByText('Desglose por tema')).not.toBeInTheDocument()
+  })
+
+  it('shows the translated result summary in English', () => {
+    renderResultInEnglish({
+      test_id: 77,
+      correct_count: 28,
+      wrong_count: 2,
+      passed: true,
+      score: 93,
+      by_topic: [{ topic_id: 101, correct: 28, wrong: 2, accuracy_pct: 93.3 }],
+      review_items: Array.from({ length: 30 }, (_, index) => ({
+        question_id: index + 1,
+        selected_label: index < 28 ? 'b' : null,
+        correct_label: 'b',
+        is_correct: index < 28,
+        is_answered: index < 28,
+      })),
+    })
+
+    expect(screen.getByRole('heading', { name: 'Test passed' })).toBeInTheDocument()
+    expect(screen.getByText('Great job, keep it up')).toBeInTheDocument()
+    expect(screen.getByText('Correct')).toBeInTheDocument()
+    expect(screen.getByText('Unanswered')).toBeInTheDocument()
+    expect(screen.getByText(/Time/, { selector: 'span' }).closest('p')).toHaveTextContent('Time: 02:05')
+    expect(screen.getByText(/Test type/, { selector: 'span' }).closest('p')).toHaveTextContent('Test type: Random test')
+    expect(screen.getAllByText(/Permit/, { selector: 'span' })[0].closest('p')).toHaveTextContent('Permit: Permit B')
+    expect(screen.getByRole('button', { name: /review answers/i })).toBeInTheDocument()
   })
 })

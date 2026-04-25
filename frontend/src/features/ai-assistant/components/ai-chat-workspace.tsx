@@ -9,6 +9,7 @@ import { Button } from '../../../components/ui/button'
 import { EmptyState } from '../../../components/ui/empty-state'
 import { Spinner } from '../../../components/ui/spinner'
 import { ApiError } from '../../../lib/http'
+import { useI18n } from '../../i18n'
 import { useConversationDetail, useConversations, useCreateConversation, useSendMessage } from '../hooks/use-ai-assistant'
 import type { ConversationDetail, Message } from '../types'
 
@@ -23,6 +24,7 @@ type AssistantStatus = {
 }
 
 export function AiChatWorkspace({ accessToken, userName }: AiChatWorkspaceProps) {
+  const { language, locale } = useI18n()
   const queryClient = useQueryClient()
   const conversationsQuery = useConversations(accessToken)
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null)
@@ -43,6 +45,72 @@ export function AiChatWorkspace({ accessToken, userName }: AiChatWorkspaceProps)
     [conversations, effectiveSelectedConversationId],
   )
 
+  const copy = language === 'en'
+    ? {
+        createConversationError: 'Could not create the conversation.',
+        sendMessageError: 'Could not send the message to the assistant.',
+        conversations: 'Conversations',
+        conversationsDescription: 'Access your history and resume the context where you left it.',
+        creating: 'Creating…',
+        newConversation: 'New conversation',
+        loadConversationsTitle: 'Could not load conversations',
+        retry: 'Retry',
+        emptyConversationsTitle: 'You do not have conversations yet',
+        emptyConversationsDescription: 'Create your first chat to start asking the assistant questions.',
+        createConversation: 'Create conversation',
+        openConversationPreview: 'Open the conversation to see the latest exchange.',
+        assistantTitle: 'DriveMind Assistant',
+        untitledConversation: 'New conversation',
+        session: userName ? `Session for ${userName}` : 'Authenticated session',
+        updated: (value: string) => `Updated ${value}`,
+        readyToStart: 'Ready to start',
+        loadConversationTitle: 'Could not load conversation',
+        loadConversationDescription: 'Try reloading the detail.',
+        assistantTyping: 'The assistant is typing…',
+        noMessagesTitle: selectedConversation ? 'There are no messages yet' : 'Start a conversation',
+        noMessagesDescription: selectedConversation
+          ? 'Send your first question to receive an answer from the assistant.'
+          : 'Choose an existing conversation or write below to open a new one automatically.',
+        composerLabel: 'Write your question here…',
+        composerPlaceholder: 'Write your question here…',
+        activeConversationHint: 'The reply will be added to the active conversation.',
+        newConversationHint: 'If you send now, DriveMind will create a new conversation automatically.',
+        sending: 'Sending…',
+        send: 'Send',
+      }
+    : {
+        createConversationError: 'No se pudo crear la conversación.',
+        sendMessageError: 'No se pudo enviar el mensaje al asistente.',
+        conversations: 'Conversaciones',
+        conversationsDescription: 'Accede a tu historial y retoma el contexto donde lo dejaste.',
+        creating: 'Creando…',
+        newConversation: 'Nueva conversación',
+        loadConversationsTitle: 'No se pudieron cargar las conversaciones',
+        retry: 'Reintentar',
+        emptyConversationsTitle: 'Todavía no tienes conversaciones',
+        emptyConversationsDescription: 'Crea tu primer chat para empezar a consultar dudas al asistente.',
+        createConversation: 'Crear conversación',
+        openConversationPreview: 'Abre la conversación para ver el último intercambio.',
+        assistantTitle: 'DriveMind Assistant',
+        untitledConversation: 'Nueva conversación',
+        session: userName ? `Sesión de ${userName}` : 'Sesión autenticada',
+        updated: (value: string) => `Actualizado ${value}`,
+        readyToStart: 'Listo para empezar',
+        loadConversationTitle: 'No se pudo cargar la conversación',
+        loadConversationDescription: 'Prueba a recargar el detalle.',
+        assistantTyping: 'El asistente está escribiendo…',
+        noMessagesTitle: selectedConversation ? 'Todavía no hay mensajes' : 'Empezá una conversación',
+        noMessagesDescription: selectedConversation
+          ? 'Envía tu primera pregunta para recibir una respuesta del asistente.'
+          : 'Elige una conversación existente o escribe abajo para abrir una nueva automáticamente.',
+        composerLabel: 'Escribe tu pregunta aquí…',
+        composerPlaceholder: 'Escribe tu pregunta aquí…',
+        activeConversationHint: 'La respuesta se añadirá a la conversación activa.',
+        newConversationHint: 'Si envías ahora, DriveMind creará una conversación nueva automáticamente.',
+        sending: 'Enviando…',
+        send: 'Enviar',
+      }
+
   const messages = conversationDetailQuery.data?.messages ?? []
   const assistantStatus = getAssistantStatus({
     accessToken,
@@ -54,6 +122,7 @@ export function AiChatWorkspace({ accessToken, userName }: AiChatWorkspaceProps)
       conversationsQuery.isLoading ||
       (Boolean(effectiveSelectedConversationId) && conversationDetailQuery.isLoading && !conversationDetailQuery.data),
     isSending: sendMessageMutation.isPending,
+    language,
   })
 
   const conversationPreviews = useMemo(() => {
@@ -63,10 +132,10 @@ export function AiChatWorkspace({ accessToken, userName }: AiChatWorkspaceProps)
           queryClient.getQueryData<ConversationDetail>(['ai', 'conversations', conversation.id]) ??
           (conversation.id === effectiveSelectedConversationId ? conversationDetailQuery.data : undefined)
 
-        return [conversation.id, getConversationPreview(cachedDetail?.messages)]
+        return [conversation.id, getConversationPreview(cachedDetail?.messages, language)]
       }),
     )
-  }, [conversations, conversationDetailQuery.data, effectiveSelectedConversationId, queryClient])
+  }, [conversations, conversationDetailQuery.data, effectiveSelectedConversationId, language, queryClient])
 
   const conversationTitles = useMemo(() => {
     return new Map(
@@ -75,10 +144,10 @@ export function AiChatWorkspace({ accessToken, userName }: AiChatWorkspaceProps)
           queryClient.getQueryData<ConversationDetail>(['ai', 'conversations', conversation.id]) ??
           (conversation.id === effectiveSelectedConversationId ? conversationDetailQuery.data : undefined)
 
-        return [conversation.id, getConversationTitle(conversation.title, cachedDetail?.messages)]
+        return [conversation.id, getConversationTitle(conversation.title, cachedDetail?.messages, copy.untitledConversation)]
       }),
     )
-  }, [conversations, conversationDetailQuery.data, effectiveSelectedConversationId, queryClient])
+  }, [conversations, conversationDetailQuery.data, copy.untitledConversation, effectiveSelectedConversationId, queryClient])
 
   const isComposerBusy = createConversationMutation.isPending || sendMessageMutation.isPending
   const canSubmit = draft.trim().length > 0 && !isComposerBusy
@@ -91,7 +160,7 @@ export function AiChatWorkspace({ accessToken, userName }: AiChatWorkspaceProps)
       const conversation = await createConversationMutation.mutateAsync({ title: null })
       setSelectedConversationId(conversation.id)
     } catch (error) {
-      setComposerError(getErrorMessage(error, 'No se pudo crear la conversación.'))
+      setComposerError(getErrorMessage(error, copy.createConversationError))
     }
   }
 
@@ -125,7 +194,7 @@ export function AiChatWorkspace({ accessToken, userName }: AiChatWorkspaceProps)
       await sendMessageMutation.mutateAsync({ conversation_id: conversationId, content: trimmedDraft })
     } catch (error) {
       setDraft(trimmedDraft)
-      setComposerError(getErrorMessage(error, 'No se pudo enviar el mensaje al asistente.'))
+      setComposerError(getErrorMessage(error, copy.sendMessageError))
     }
   }
 
@@ -139,9 +208,9 @@ export function AiChatWorkspace({ accessToken, userName }: AiChatWorkspaceProps)
       <Card className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-5 border-[#d6e1ef] bg-[linear-gradient(180deg,#f9fbfe_0%,#f2f6fb_100%)] p-5">
         <div className="space-y-4">
           <div>
-            <p className="m-0 text-xs font-bold tracking-[0.18em] uppercase text-[#315f99]">Conversaciones</p>
-            <h2 className="mt-2 mb-1 text-[1.35rem] text-[#0f2745]">Conversaciones</h2>
-            <p className="m-0 text-sm text-[#607286]">Accede a tu historial y retoma el contexto donde lo dejaste.</p>
+            <p className="m-0 text-xs font-bold tracking-[0.18em] uppercase text-[#315f99]">{copy.conversations}</p>
+            <h2 className="mt-2 mb-1 text-[1.35rem] text-[#0f2745]">{copy.conversations}</h2>
+            <p className="m-0 text-sm text-[#607286]">{copy.conversationsDescription}</p>
           </div>
 
           <Button
@@ -151,7 +220,7 @@ export function AiChatWorkspace({ accessToken, userName }: AiChatWorkspaceProps)
             onClick={() => void handleCreateConversation()}
           >
             <Plus className="size-4" />
-            {createConversationMutation.isPending ? 'Creando…' : 'Nueva conversación'}
+            {createConversationMutation.isPending ? copy.creating : copy.newConversation}
           </Button>
         </div>
 
@@ -161,24 +230,24 @@ export function AiChatWorkspace({ accessToken, userName }: AiChatWorkspaceProps)
           </div>
         ) : conversationsQuery.isError ? (
           <EmptyState
-            title="No se pudieron cargar las conversaciones"
-            description={getErrorMessage(conversationsQuery.error, 'Prueba de nuevo en unos segundos.')}
-            action={
-              <Button type="button" variant="secondary" onClick={() => void conversationsQuery.refetch()}>
-                Reintentar
-              </Button>
-            }
-          />
-        ) : showConversationListEmpty ? (
-          <EmptyState
-            title="Todavía no tienes conversaciones"
-            description="Crea tu primer chat para empezar a consultar dudas al asistente."
-            action={
-              <Button type="button" variant="secondary" onClick={() => void handleCreateConversation()}>
-                Crear conversación
-              </Button>
-            }
-          />
+             title={copy.loadConversationsTitle}
+             description={getErrorMessage(conversationsQuery.error, language === 'en' ? 'Try again in a few seconds.' : 'Prueba de nuevo en unos segundos.')}
+             action={
+               <Button type="button" variant="secondary" onClick={() => void conversationsQuery.refetch()}>
+                 {copy.retry}
+               </Button>
+             }
+           />
+         ) : showConversationListEmpty ? (
+           <EmptyState
+             title={copy.emptyConversationsTitle}
+             description={copy.emptyConversationsDescription}
+             action={
+               <Button type="button" variant="secondary" onClick={() => void handleCreateConversation()}>
+                 {copy.createConversation}
+               </Button>
+             }
+           />
         ) : (
           <div className="min-h-0 space-y-3 overflow-y-auto pr-1">
             {conversations.map((conversation) => {
@@ -211,17 +280,17 @@ export function AiChatWorkspace({ accessToken, userName }: AiChatWorkspaceProps)
 
                       <div className="min-w-0">
                         <p className="m-0 line-clamp-1 font-semibold text-[#102540]">
-                          {conversationTitles.get(conversation.id) ?? getConversationTitle(conversation.title)}
-                        </p>
-                        <p className="mt-1 mb-0 line-clamp-2 text-sm leading-5 text-[#7b8b9f]">
-                          {conversationPreviews.get(conversation.id) ?? 'Abre la conversación para ver el último intercambio.'}
-                        </p>
+                           {conversationTitles.get(conversation.id) ?? getConversationTitle(conversation.title, undefined, copy.untitledConversation)}
+                         </p>
+                         <p className="mt-1 mb-0 line-clamp-2 text-sm leading-5 text-[#7b8b9f]">
+                           {conversationPreviews.get(conversation.id) ?? copy.openConversationPreview}
+                         </p>
                       </div>
                     </div>
 
-                    <span className="shrink-0 text-xs font-medium text-[#6d7f95]">{formatRelativeTime(conversation.updated_at)}</span>
-                  </div>
-                </button>
+                     <span className="shrink-0 text-xs font-medium text-[#6d7f95]">{formatRelativeTime(conversation.updated_at, language)}</span>
+                   </div>
+                 </button>
               )
             })}
           </div>
@@ -236,24 +305,24 @@ export function AiChatWorkspace({ accessToken, userName }: AiChatWorkspaceProps)
             </div>
 
             <div className="min-w-0">
-              <p className="m-0 text-xs font-bold tracking-[0.18em] uppercase text-[#8dd3ff]">DriveMind Assistant</p>
-                <h2 className="mt-2 mb-1 line-clamp-1 text-[1.4rem] text-white">
-                  {selectedConversation
-                    ? getConversationTitle(selectedConversation.title, messages)
-                    : 'Nueva conversación'}
-                </h2>
+               <p className="m-0 text-xs font-bold tracking-[0.18em] uppercase text-[#8dd3ff]">{copy.assistantTitle}</p>
+                 <h2 className="mt-2 mb-1 line-clamp-1 text-[1.4rem] text-white">
+                   {selectedConversation
+                     ? getConversationTitle(selectedConversation.title, messages, copy.untitledConversation)
+                     : copy.untitledConversation}
+                 </h2>
               <div className="flex flex-wrap items-center gap-3 text-sm text-[#d5e4f7]">
                   <span className="inline-flex items-center gap-2 font-medium">
                     <span className={clsx('size-2.5 rounded-full', assistantStatus.dotClassName)} />
                     {assistantStatus.label}
                   </span>
-                <span className="text-[#a7bfd9]">{userName ? `Sesión de ${userName}` : 'Sesión autenticada'}</span>
-              </div>
-            </div>
-          </div>
+                 <span className="text-[#a7bfd9]">{copy.session}</span>
+               </div>
+             </div>
+           </div>
 
           <div className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-[#d5e4f7]">
-            {selectedConversation ? `Actualizado ${formatRelativeTime(selectedConversation.updated_at)}` : 'Listo para empezar'}
+            {selectedConversation ? copy.updated(formatRelativeTime(selectedConversation.updated_at, language)) : copy.readyToStart}
           </div>
         </header>
 
@@ -264,14 +333,14 @@ export function AiChatWorkspace({ accessToken, userName }: AiChatWorkspaceProps)
             </div>
           ) : effectiveSelectedConversationId && conversationDetailQuery.isError ? (
             <EmptyState
-              title="No se pudo cargar la conversación"
-              description={getErrorMessage(conversationDetailQuery.error, 'Prueba a recargar el detalle.')}
-              action={
-                <Button type="button" variant="secondary" onClick={() => void conversationDetailQuery.refetch()}>
-                  Reintentar
-                </Button>
-              }
-            />
+             title={copy.loadConversationTitle}
+             description={getErrorMessage(conversationDetailQuery.error, copy.loadConversationDescription)}
+             action={
+               <Button type="button" variant="secondary" onClick={() => void conversationDetailQuery.refetch()}>
+                 {copy.retry}
+               </Button>
+             }
+           />
           ) : messages.length > 0 ? (
             <div className="grid gap-5">
               {messages.map((message) => {
@@ -300,9 +369,9 @@ export function AiChatWorkspace({ accessToken, userName }: AiChatWorkspaceProps)
                           </div>
                         )}
                       </div>
-                      <span className="px-1 text-xs text-[#7b8b9f]">{formatMessageTimestamp(message.created_at)}</span>
-                    </div>
-                  </article>
+                       <span className="px-1 text-xs text-[#7b8b9f]">{formatMessageTimestamp(message.created_at, locale)}</span>
+                     </div>
+                   </article>
                 )
               })}
 
@@ -312,30 +381,26 @@ export function AiChatWorkspace({ accessToken, userName }: AiChatWorkspaceProps)
                     <div className="rounded-3xl rounded-bl-md border border-[#d8e1eb] bg-[#eef2f6] px-4 py-3 text-[#18314f] shadow-[0_24px_36px_-30px_rgba(18,42,76,0.45)]">
                       <div className="flex items-center gap-3 text-sm">
                         <Spinner size="sm" className="border-[#ced9e7] border-t-[#2f6df3]" />
-                        <span>El asistente está escribiendo…</span>
-                      </div>
-                    </div>
-                  </div>
+                         <span>{copy.assistantTyping}</span>
+                       </div>
+                     </div>
+                   </div>
                 </article>
               ) : null}
             </div>
           ) : (
             <EmptyState
-              title={selectedConversation ? 'Todavía no hay mensajes' : 'Empezá una conversación'}
-              description={
-                selectedConversation
-                  ? 'Envía tu primera pregunta para recibir una respuesta del asistente.'
-                  : 'Elige una conversación existente o escribe abajo para abrir una nueva automáticamente.'
-              }
-            />
-          )}
+               title={copy.noMessagesTitle}
+               description={copy.noMessagesDescription}
+             />
+           )}
         </div>
 
         <form className="border-t border-[#dde6f0] bg-white px-5 py-3 md:px-6" onSubmit={(event) => void handleSubmit(event)}>
           <div className="grid gap-2 rounded-3xl border border-[#d8e2ee] bg-[#fbfdff] px-3 py-2 shadow-[0_24px_36px_-30px_rgba(18,42,76,0.25)]">
             <label className="sr-only" htmlFor="ai-chat-message">
-              Escribe tu pregunta aquí…
-            </label>
+               {copy.composerLabel}
+             </label>
 
             <textarea
               id="ai-chat-message"
@@ -350,17 +415,15 @@ export function AiChatWorkspace({ accessToken, userName }: AiChatWorkspaceProps)
                   }
                 }
               }}
-              placeholder="Escribe tu pregunta aquí…"
+               placeholder={copy.composerPlaceholder}
               rows={2}
               className="w-full resize-none border-0 bg-transparent px-2 py-0.5 text-sm leading-5 text-[#18314f] outline-none placeholder:text-[#8a9bae]"
             />
 
             <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#edf2f7] px-2 pt-2">
               <p className="m-0 text-sm text-[#66788d]">
-                {effectiveSelectedConversationId
-                  ? 'La respuesta se añadirá a la conversación activa.'
-                  : 'Si envías ahora, DriveMind creará una conversación nueva automáticamente.'}
-              </p>
+                 {effectiveSelectedConversationId ? copy.activeConversationHint : copy.newConversationHint}
+               </p>
 
               <Button
                 type="submit"
@@ -368,8 +431,8 @@ export function AiChatWorkspace({ accessToken, userName }: AiChatWorkspaceProps)
                 className="flex min-h-11 items-center gap-2 rounded-2xl bg-[#102540] px-4 py-2 text-sm hover:bg-[#0d2038]"
               >
                 <SendHorizonal className="size-4" />
-                {isComposerBusy ? 'Enviando…' : 'Enviar'}
-              </Button>
+                 {isComposerBusy ? copy.sending : copy.send}
+               </Button>
             </div>
           </div>
 
@@ -380,7 +443,7 @@ export function AiChatWorkspace({ accessToken, userName }: AiChatWorkspaceProps)
   )
 }
 
-function getConversationTitle(title: string | null, messages?: Message[]) {
+function getConversationTitle(title: string | null, messages?: Message[], fallbackTitle = 'Nueva conversación') {
   if (title?.trim()) {
     return title
   }
@@ -391,14 +454,14 @@ function getConversationTitle(title: string | null, messages?: Message[]) {
     return buildConversationTitle(firstUserMessage.content)
   }
 
-  return 'Nueva conversación'
+  return fallbackTitle
 }
 
-function getConversationPreview(messages?: Message[]) {
+function getConversationPreview(messages?: Message[], language: 'es' | 'en' = 'es') {
   const lastMessage = messages ? [...messages].reverse().find((message) => message.content.trim().length > 0) : undefined
 
   if (!lastMessage) {
-    return 'Sin mensajes todavía.'
+    return language === 'en' ? 'No messages yet.' : 'Sin mensajes todavía.'
   }
 
   return lastMessage.content.replace(/\s+/g, ' ').trim()
@@ -414,44 +477,46 @@ function buildConversationTitle(content: string) {
   return `${compactContent.slice(0, 45).trimEnd()}...`
 }
 
-function formatRelativeTime(value: string) {
+function formatRelativeTime(value: string, language: 'es' | 'en') {
   const timestamp = new Date(value).getTime()
 
   if (Number.isNaN(timestamp)) {
-    return 'Recién'
+    return language === 'en' ? 'Just now' : 'Recién'
   }
 
   const diffMs = Date.now() - timestamp
   const diffMinutes = Math.max(1, Math.floor(diffMs / 60_000))
 
   if (diffMinutes < 60) {
-    return diffMinutes <= 1 ? 'Hace 1 minuto' : `Hace ${diffMinutes} minutos`
+    return language === 'en'
+      ? diffMinutes <= 1 ? '1 minute ago' : `${diffMinutes} minutes ago`
+      : diffMinutes <= 1 ? 'Hace 1 minuto' : `Hace ${diffMinutes} minutos`
   }
 
   const diffHours = Math.floor(diffMinutes / 60)
 
   if (diffHours < 24) {
-    return diffHours === 1 ? 'Hace 1 hora' : `Hace ${diffHours} horas`
+     return language === 'en' ? (diffHours === 1 ? '1 hour ago' : `${diffHours} hours ago`) : diffHours === 1 ? 'Hace 1 hora' : `Hace ${diffHours} horas`
   }
 
   const diffDays = Math.floor(diffHours / 24)
 
   if (diffDays < 30) {
-    return diffDays === 1 ? 'Hace 1 día' : `Hace ${diffDays} días`
+     return language === 'en' ? (diffDays === 1 ? '1 day ago' : `${diffDays} days ago`) : diffDays === 1 ? 'Hace 1 día' : `Hace ${diffDays} días`
   }
 
   const diffMonths = Math.floor(diffDays / 30)
 
   if (diffMonths < 12) {
-    return diffMonths === 1 ? 'Hace 1 mes' : `Hace ${diffMonths} meses`
+     return language === 'en' ? (diffMonths === 1 ? '1 month ago' : `${diffMonths} months ago`) : diffMonths === 1 ? 'Hace 1 mes' : `Hace ${diffMonths} meses`
   }
 
   const diffYears = Math.floor(diffMonths / 12)
-  return diffYears === 1 ? 'Hace 1 año' : `Hace ${diffYears} años`
+  return language === 'en' ? (diffYears === 1 ? '1 year ago' : `${diffYears} years ago`) : diffYears === 1 ? 'Hace 1 año' : `Hace ${diffYears} años`
 }
 
-function formatMessageTimestamp(value: string) {
-  return new Intl.DateTimeFormat('es-ES', {
+function formatMessageTimestamp(value: string, locale: string) {
+  return new Intl.DateTimeFormat(locale, {
     day: '2-digit',
     month: 'short',
     hour: '2-digit',
@@ -467,6 +532,7 @@ function getAssistantStatus({
   sendError,
   isLoading,
   isSending,
+  language,
 }: {
   accessToken: string | null
   conversationsError: boolean
@@ -475,37 +541,54 @@ function getAssistantStatus({
   sendError: boolean
   isLoading: boolean
   isSending: boolean
+  language: 'es' | 'en'
 }): AssistantStatus {
+  const copy = language === 'en'
+    ? {
+        authRequired: 'Authentication required',
+        degraded: 'Service issues detected',
+        responding: 'Assistant responding',
+        connecting: 'Connecting to the assistant',
+        available: 'Assistant available',
+      }
+    : {
+        authRequired: 'Autenticación requerida',
+        degraded: 'Servicio con incidencias',
+        responding: 'Asistente respondiendo',
+        connecting: 'Conectando con el asistente',
+        available: 'Asistente disponible',
+      }
+
   if (!accessToken) {
     return {
-      label: 'Autenticación requerida',
+       label: copy.authRequired,
       dotClassName: 'bg-slate-400',
     }
   }
 
   if (conversationsError || detailError || createError || sendError) {
     return {
-      label: 'Servicio con incidencias',
+      label: copy.degraded,
       dotClassName: 'bg-amber-400',
     }
   }
 
   if (isSending) {
     return {
-      label: 'Asistente respondiendo',
+      label: copy.responding,
       dotClassName: 'bg-sky-400',
     }
   }
 
   if (isLoading) {
     return {
-      label: 'Conectando con el asistente',
+      label: copy.connecting,
       dotClassName: 'bg-sky-400',
     }
   }
 
   return {
-    label: 'Asistente disponible',
+    label: copy.available,
     dotClassName: 'bg-emerald-400',
   }
 }

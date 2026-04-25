@@ -15,4 +15,17 @@ describe('StatsPage', () => {
     expect(screen.getByText('Área de mejora')).toBeInTheDocument()
     expect(screen.getByText('Tendencia')).toBeInTheDocument()
   })
+
+  it('renders the analytics dashboard in English', async () => {
+    renderWithProviders(<StatsPage />, undefined, { language: 'en' })
+
+    expect(await screen.findByRole('heading', { name: 'Statistics' })).toBeInTheDocument()
+    expect(screen.getByText('Performance evolution')).toBeInTheDocument()
+    expect(screen.getByText('Test distribution')).toBeInTheDocument()
+    expect(screen.getByText('Performance by topic')).toBeInTheDocument()
+    expect(screen.getByText('Weekly activity')).toBeInTheDocument()
+    expect(screen.getByText('Strong point')).toBeInTheDocument()
+    expect(screen.getByText('Improvement area')).toBeInTheDocument()
+    expect(screen.getByText('Trend')).toBeInTheDocument()
+  })
 })

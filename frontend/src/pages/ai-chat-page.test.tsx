@@ -51,4 +51,21 @@ describe('AiChatPage', () => {
 
     expect(await screen.findByText('Todavía no hay mensajes')).toBeInTheDocument()
   })
+
+  it('renders the AI chat workspace in English', async () => {
+    const user = userEvent.setup()
+
+    renderWithProviders(<AiChatPage />, undefined, { language: 'en' })
+
+    expect(await screen.findByText('Conversation hub')).toBeInTheDocument()
+    expect(screen.getByText('Conversations')).toBeInTheDocument()
+    expect(screen.getByLabelText(/write your question here/i)).toBeInTheDocument()
+
+    await user.clear(screen.getByLabelText(/write your question here/i))
+    await user.type(screen.getByLabelText(/write your question here/i), 'What documents should I carry?')
+    await user.click(screen.getByRole('button', { name: /^send$/i }))
+
+    expect(await screen.findByText('What documents should I carry?')).toBeInTheDocument()
+    expect((await screen.findAllByText('Assistant reply: What documents should I carry?')).length).toBeGreaterThan(0)
+  })
 })

@@ -1,5 +1,7 @@
+import type { ReactElement } from 'react'
 import { render, screen } from '@testing-library/react'
 import { TestExamInterface } from './test-exam-interface'
+import { I18nProvider } from '../../i18n'
 import type { GeneratedTest, TestResultReviewItem, Topic } from '../types'
 
 const topics: Topic[] = [{ id: 101, permit_id: 4, topic_number: 1, name: 'Señales' }]
@@ -49,9 +51,41 @@ const reviewItems: TestResultReviewItem[] = [
   { question_id: 2, selected_label: null, correct_label: 'c', is_correct: false, is_answered: false },
 ]
 
+function renderExamInterface(ui: ReactElement) {
+  return render(<I18nProvider>{ui}</I18nProvider>)
+}
+
 describe('TestExamInterface review mode', () => {
-  it('resalta la opción correcta, distingue sin responder y marca el mapa por estado', () => {
+  it('shows review copy in English when the language is en', () => {
     render(
+      <I18nProvider initialLanguage="en">
+        <TestExamInterface
+          activeQuestionId={2}
+          answeredCount={1}
+          elapsedSeconds={125}
+          isReviewMode
+          isSubmitting={false}
+          onAnswerSelect={() => {}}
+          onBackToModeSelection={() => {}}
+          onChangePermit={() => {}}
+          onQuestionChange={() => {}}
+          onStartAnotherTest={() => {}}
+          onSubmit={() => {}}
+          reviewItems={reviewItems}
+          selectedAnswers={{ 1: 'a' }}
+          test={test}
+          testLabel="Random test"
+          topics={topics}
+        />
+      </I18nProvider>,
+    )
+
+    expect(screen.getByText(/Unanswered · does not count as a mistake/i)).toBeInTheDocument()
+    expect(screen.getByText('Answer review')).toBeInTheDocument()
+  })
+
+  it('resalta la opción correcta, distingue sin responder y marca el mapa por estado', () => {
+    renderExamInterface(
       <TestExamInterface
         activeQuestionId={1}
         answeredCount={1}
@@ -81,7 +115,7 @@ describe('TestExamInterface review mode', () => {
   })
 
   it('muestra un aviso cuando la pregunta revisada quedó sin responder', () => {
-    render(
+    renderExamInterface(
       <TestExamInterface
         activeQuestionId={2}
         answeredCount={1}

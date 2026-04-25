@@ -14,4 +14,16 @@ describe('PrivacyPolicyPage', () => {
     expect(screen.getByText(/Última actualización:/i)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /volver a ajustes/i })).toHaveAttribute('href', '/settings')
   })
+
+  it('renders the legal document in English', () => {
+    renderWithProviders(<PrivacyPolicyPage />, undefined, { language: 'en' })
+
+    expect(screen.getByRole('heading', { name: 'Privacy policy' })).toBeInTheDocument()
+    expect(screen.getByText('Information about how your data is processed')).toBeInTheDocument()
+    expect(screen.getByRole('navigation', { name: 'Privacy policy index' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /1\. general information/i })).toHaveAttribute('href', '#general-information')
+    expect(screen.getByText('We do not share your personal data with third parties, except for:')).toBeInTheDocument()
+    expect(screen.getByText(/Last updated:/i)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /back to settings/i })).toHaveAttribute('href', '/settings')
+  })
 })

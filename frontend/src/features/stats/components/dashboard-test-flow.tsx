@@ -14,6 +14,7 @@ import {
   TruckIcon,
 } from '../../../components/icons'
 import { ApiError } from '../../../lib/http'
+import { useI18n } from '../../i18n'
 import {
   TestExamInterface,
   TestResultScreen,
@@ -79,7 +80,7 @@ function buildSubmitPayload(answers: Record<number, TestOptionLabel | undefined>
     )
 }
 
-const permitPresentationMap: Record<string, PermitPresentation> = {
+const permitPresentationMapEs: Record<string, PermitPresentation> = {
   AM: {
     code: 'AM',
     title: 'Permiso AM - Ciclomotores',
@@ -126,7 +127,53 @@ const permitPresentationMap: Record<string, PermitPresentation> = {
   },
 }
 
-const fallbackPermits: Permit[] = [
+const permitPresentationMapEn: Record<string, PermitPresentation> = {
+  AM: {
+    code: 'AM',
+    title: 'AM Permit - Mopeds',
+    description: 'Two or three-wheel mopeds and light quadricycles, ideal for starting urban mobility.',
+    icon: 'motorcycle',
+  },
+  B: {
+    code: 'B',
+    title: 'B Permit - Cars',
+    description: 'Cars with a maximum authorized mass up to 3500 kg and designed for up to 9 seats including the driver.',
+    icon: 'car',
+    backgroundImage: permitBImage,
+  },
+  A1: {
+    code: 'A1',
+    title: 'A1 Permit - Light motorcycles',
+    description: 'Motorcycles up to 125 cc, maximum power of 11 kW, and motor tricycles up to 15 kW.',
+    icon: 'motorcycle',
+  },
+  A2: {
+    code: 'A2',
+    title: 'A2 Permit - Mid-size motorcycles',
+    description: 'Motorcycles with a maximum power of 35 kW and a power-to-weight ratio suited for intermediate riding.',
+    icon: 'motorcycle',
+  },
+  'B+E': {
+    code: 'B+E',
+    title: 'B+E Permit - Car + Trailer',
+    description: 'Vehicle combinations made up of a car and a larger trailer for special loads.',
+    icon: 'car',
+  },
+  C1: {
+    code: 'C1',
+    title: 'C1 Permit - Light trucks',
+    description: 'Medium-sized trucks with MMA above 3500 kg and below 7500 kg, plus up to 8 passengers besides the driver.',
+    icon: 'truck',
+  },
+  C: {
+    code: 'C',
+    title: 'C Permit - Heavy trucks',
+    description: 'Motor vehicles for transporting goods with MMA above 3500 kg, designed for heavy loads.',
+    icon: 'truck',
+  },
+}
+
+const fallbackPermitsEs: Permit[] = [
   { id: 1, code: 'AM', name: 'Ciclomotores' },
   { id: 2, code: 'A1', name: 'Motos ligeras' },
   { id: 3, code: 'A2', name: 'Motos medias' },
@@ -136,7 +183,17 @@ const fallbackPermits: Permit[] = [
   { id: 7, code: 'C', name: 'Camiones pesados' },
 ]
 
-const testOptions: TestOption[] = [
+const fallbackPermitsEn: Permit[] = [
+  { id: 1, code: 'AM', name: 'Mopeds' },
+  { id: 2, code: 'A1', name: 'Light motorcycles' },
+  { id: 3, code: 'A2', name: 'Mid-size motorcycles' },
+  { id: 4, code: 'B', name: 'Cars' },
+  { id: 5, code: 'B+E', name: 'Car + Trailer' },
+  { id: 6, code: 'C1', name: 'Light trucks' },
+  { id: 7, code: 'C', name: 'Heavy trucks' },
+]
+
+const testOptionsEs: TestOption[] = [
   {
     id: 'topic',
     title: 'Test por temas',
@@ -160,7 +217,31 @@ const testOptions: TestOption[] = [
   },
 ]
 
-const fallbackTopicsByPermit: Record<string, Topic[]> = {
+const testOptionsEn: TestOption[] = [
+  {
+    id: 'topic',
+    title: 'Topic test',
+    description: 'Practice a specific block of the syllabus to reinforce what you are studying right now.',
+    icon: 'layers',
+    accent: 'blue',
+  },
+  {
+    id: 'random',
+    title: 'Random test',
+    description: 'Mix varied questions to simulate a general practice session and measure your current level.',
+    icon: 'shuffle',
+    accent: 'green',
+  },
+  {
+    id: 'failed',
+    title: 'Failed questions',
+    description: 'Review your most frequent mistakes and turn those setbacks into real learning.',
+    icon: 'refresh',
+    accent: 'red',
+  },
+]
+
+const fallbackTopicsByPermitEs: Record<string, Topic[]> = {
   AM: [
     { id: 11, permit_id: 1, topic_number: 1, name: 'Normas básicas de circulación' },
     { id: 12, permit_id: 1, topic_number: 2, name: 'Señalización urbana' },
@@ -199,6 +280,45 @@ const fallbackTopicsByPermit: Record<string, Topic[]> = {
   ],
 }
 
+const fallbackTopicsByPermitEn: Record<string, Topic[]> = {
+  AM: [
+    { id: 11, permit_id: 1, topic_number: 1, name: 'Basic traffic rules' },
+    { id: 12, permit_id: 1, topic_number: 2, name: 'Urban signage' },
+    { id: 13, permit_id: 1, topic_number: 3, name: 'Safety and equipment' },
+  ],
+  A1: [
+    { id: 21, permit_id: 2, topic_number: 1, name: 'Signs and priorities' },
+    { id: 22, permit_id: 2, topic_number: 2, name: 'Safe motorcycle riding' },
+    { id: 23, permit_id: 2, topic_number: 3, name: 'Protection and maneuvers' },
+  ],
+  A2: [
+    { id: 31, permit_id: 3, topic_number: 1, name: 'Traffic techniques' },
+    { id: 32, permit_id: 3, topic_number: 2, name: 'Signage and overtaking' },
+    { id: 33, permit_id: 3, topic_number: 3, name: 'Active and passive safety' },
+  ],
+  B: [
+    { id: 101, permit_id: 4, topic_number: 1, name: 'Signs' },
+    { id: 102, permit_id: 4, topic_number: 2, name: 'Traffic rules' },
+    { id: 103, permit_id: 4, topic_number: 3, name: 'Road safety' },
+    { id: 104, permit_id: 4, topic_number: 4, name: 'Mechanics and basic maintenance' },
+  ],
+  'B+E': [
+    { id: 41, permit_id: 5, topic_number: 1, name: 'Driving with trailer' },
+    { id: 42, permit_id: 5, topic_number: 2, name: 'Masses, loads and maneuvers' },
+    { id: 43, permit_id: 5, topic_number: 3, name: 'Safety and braking' },
+  ],
+  C1: [
+    { id: 51, permit_id: 6, topic_number: 1, name: 'Freight regulations' },
+    { id: 52, permit_id: 6, topic_number: 2, name: 'Priorities and signage' },
+    { id: 53, permit_id: 6, topic_number: 3, name: 'Safety in heavy vehicles' },
+  ],
+  C: [
+    { id: 61, permit_id: 7, topic_number: 1, name: 'Professional transport' },
+    { id: 62, permit_id: 7, topic_number: 2, name: 'Masses, distances and braking' },
+    { id: 63, permit_id: 7, topic_number: 3, name: 'Road risk prevention' },
+  ],
+}
+
 const accentClasses: Record<TestOption['accent'], { card: string; icon: string; iconHover: string; pill: string }> = {
   blue: {
     card: 'bg-[#eef5ff] text-[#2453d0]',
@@ -220,18 +340,24 @@ const accentClasses: Record<TestOption['accent'], { card: string; icon: string; 
   },
 }
 
-function getPermitPresentation(permit: Permit): PermitPresentation {
+function getPermitPresentation(permit: Permit, language: 'es' | 'en'): PermitPresentation {
+  const presentationMap = language === 'en' ? permitPresentationMapEn : permitPresentationMapEs
+
   return (
-    permitPresentationMap[permit.code] ?? {
+    presentationMap[permit.code] ?? {
       code: permit.code,
-      title: `Permiso ${permit.code} - ${permit.name}`,
-      description: `Preparación teórica para el permiso ${permit.code}. Próximamente ampliaremos la información específica de esta categoría.`,
+      title: language === 'en' ? `Permit ${permit.code} - ${permit.name}` : `Permiso ${permit.code} - ${permit.name}`,
+      description:
+        language === 'en'
+          ? `Theory preparation for permit ${permit.code}. We will expand the specific information for this category soon.`
+          : `Preparación teórica para el permiso ${permit.code}. Próximamente ampliaremos la información específica de esta categoría.`,
       icon: 'car',
     }
   )
 }
 
 export function DashboardTestFlow({ accessToken, onBackToDashboard, backButtonLabel = 'Volver al dashboard' }: DashboardTestFlowProps) {
+  const { language } = useI18n()
   const permitsQuery = usePermits(accessToken)
   const generateTestMutation = useGenerateTest(accessToken)
   const generateTestAsync = generateTestMutation.mutateAsync
@@ -248,6 +374,62 @@ export function DashboardTestFlow({ accessToken, onBackToDashboard, backButtonLa
   const shouldLoadTopics = selectedPermit !== null && (step === 'mode-selection' || selectedOption === 'topic')
 
   const topicsQuery = useTopics(accessToken, selectedPermit?.code ?? '', shouldLoadTopics)
+  const copy = language === 'en'
+    ? {
+        testPhase: 'Test phase',
+        takingTest: 'You are taking the test',
+        takingDescription: 'Answer each question calmly. If you submit the test with blank questions, they will appear as unanswered in the review and will not count as mistakes.',
+        generating: 'Generating test',
+        cannotOpen: 'We could not open the exam',
+        backToTypes: 'Back to test types',
+        retry: 'Retry',
+        selectedPermit: 'Selected permit',
+        topicSelection: 'Topic selection',
+        chooseTopic: 'Choose the topic to start the test',
+        chooseTopicDescription: 'Selecting a topic takes you straight into the test phase without leaving the dashboard.',
+        loadingTopics: 'Loading topics from backend…',
+        fallbackTopics: (code: string) => `Showing fallback topics for permit ${code}.`,
+        topic: 'Topic',
+        openPlaceholder: (code: string) => `Open the placeholder exam for this permit ${code} block.`,
+        noTopics: 'We still did not find topics for this permit. Try another permit or come back later.',
+        newTest: 'New test',
+        selectPermit: 'Select permit',
+        selectPermitDescription: 'Choose the permit type you want to take the test on',
+        start: 'Start',
+        permit: 'Permit',
+        permitLabel: (code: string) => `Permit ${code}`,
+        whatType: 'What kind of test do you want to take?',
+        chooseOption: 'Choose one of the following options to practice',
+        modeFallback: 'Test mode',
+      }
+    : {
+        testPhase: 'Fase del test',
+        takingTest: 'Estás haciendo el test',
+        takingDescription: 'Responde cada pregunta con calma. Si envías el test con preguntas en blanco, aparecerán como sin responder en la revisión y no sumarán como fallo.',
+        generating: 'Generando el test',
+        cannotOpen: 'No pudimos abrir el examen',
+        backToTypes: 'Volver a tipos de test',
+        retry: 'Reintentar',
+        selectedPermit: 'Permiso seleccionado',
+        topicSelection: 'Selección de tema',
+        chooseTopic: 'Elige el tema para empezar el test',
+        chooseTopicDescription: 'Al seleccionar un tema pasas directamente a la fase de hacer test sin salir del dashboard.',
+        loadingTopics: 'Cargando temas del backend…',
+        fallbackTopics: (code: string) => `Mostrando temas fallback para el permiso ${code}.`,
+        topic: 'Tema',
+        openPlaceholder: (code: string) => `Abrir placeholder de examen para este bloque del permiso ${code}.`,
+        noTopics: 'No encontramos temas para este permiso todavía. Prueba con otro permiso o vuelve más tarde.',
+        newTest: 'Nuevo test',
+        selectPermit: 'Selecciona el permiso',
+        selectPermitDescription: 'Elige el tipo de permiso sobre el que quieres realizar el test',
+        start: 'Comenzar',
+        permit: 'Permiso',
+        permitLabel: (code: string) => `Permiso ${code}`,
+        whatType: '¿Qué tipo de test quieres hacer?',
+        chooseOption: 'Elige entre las siguientes opciones para practicar',
+        modeFallback: 'Modo de test',
+      }
+
   const submitTestMutation = useSubmitTest(accessToken, activeTest?.id ?? null)
 
   const permits = useMemo(() => {
@@ -255,8 +437,8 @@ export function DashboardTestFlow({ accessToken, onBackToDashboard, backButtonLa
       return permitsQuery.data
     }
 
-    return fallbackPermits
-  }, [permitsQuery.data])
+    return language === 'en' ? fallbackPermitsEn : fallbackPermitsEs
+  }, [language, permitsQuery.data])
 
   function handlePermitSelect(permit: Permit) {
     resetExamState()
@@ -283,8 +465,8 @@ export function DashboardTestFlow({ accessToken, onBackToDashboard, backButtonLa
       return topicsQuery.data
     }
 
-    return fallbackTopicsByPermit[selectedPermit.code] ?? []
-  }, [selectedPermit, topicsQuery.data])
+    return (language === 'en' ? fallbackTopicsByPermitEn : fallbackTopicsByPermitEs)[selectedPermit.code] ?? []
+  }, [language, selectedPermit, topicsQuery.data])
 
   const answeredCount = useMemo(
     () => Object.values(selectedAnswers).filter((answer) => answer !== undefined).length,
@@ -332,7 +514,7 @@ export function DashboardTestFlow({ accessToken, onBackToDashboard, backButtonLa
       setActiveTest(generatedTest)
       setActiveQuestionId(generatedTest.questions[0]?.id ?? 0)
     } catch (error) {
-      setSessionError(error instanceof ApiError ? error.message : 'No pudimos generar el test real con core-service.')
+       setSessionError(error instanceof ApiError ? error.message : language === 'en' ? 'We could not generate the real test with core-service.' : 'No pudimos generar el test real con core-service.')
     }
   }
 
@@ -373,7 +555,7 @@ export function DashboardTestFlow({ accessToken, onBackToDashboard, backButtonLa
       setResult(submission)
       setStep('test-result')
     } catch (error) {
-      setSessionError(error instanceof ApiError ? error.message : 'No pudimos corregir el test en core-service.')
+       setSessionError(error instanceof ApiError ? error.message : language === 'en' ? 'We could not grade the test in core-service.' : 'No pudimos corregir el test en core-service.')
     }
   }
 
@@ -386,10 +568,10 @@ export function DashboardTestFlow({ accessToken, onBackToDashboard, backButtonLa
           onBackToDashboard={onBackToDashboard}
           onReviewAnswers={() => setStep('test-review')}
           onStartAnotherTest={() => void startTestSession(selectedOption, selectedTopic ?? undefined)}
-          permitLabel={selectedPermit?.name ?? `Permiso ${selectedPermit?.code ?? ''}`}
+           permitLabel={selectedPermit?.name ?? `${language === 'en' ? 'Permit' : 'Permiso'} ${selectedPermit?.code ?? ''}`}
           result={result}
           test={activeTest}
-          testLabel={getTestOptionTitle(selectedOption)}
+           testLabel={getTestOptionTitle(selectedOption, language)}
         />
       </div>
     )
@@ -415,7 +597,7 @@ export function DashboardTestFlow({ accessToken, onBackToDashboard, backButtonLa
           reviewItems={result.review_items}
           selectedAnswers={selectedAnswers}
           test={activeTest}
-          testLabel={getTestOptionTitle(selectedOption)}
+           testLabel={getTestOptionTitle(selectedOption, language)}
           topics={availableTopics}
         />
       </div>
@@ -428,31 +610,31 @@ export function DashboardTestFlow({ accessToken, onBackToDashboard, backButtonLa
         <TopActionButton label={backButtonLabel} onClick={onBackToDashboard} />
 
         <section className="grid gap-2">
-          <p className="m-0 text-sm font-semibold tracking-[0.12em] uppercase text-[#2C5F8A]">Fase del test</p>
-          <h2 className="m-0 text-[clamp(2rem,4vw,3.2rem)] leading-none text-[#1E3A5F]">Estás haciendo el test</h2>
-          <p className="m-0 max-w-3xl text-sm text-[#5f7287] md:text-base">
-            Responde cada pregunta con calma. Si envías el test con preguntas en blanco, contarán como fallo y también aparecerán en la revisión.
-          </p>
+           <p className="m-0 text-sm font-semibold tracking-[0.12em] uppercase text-[#2C5F8A]">{copy.testPhase}</p>
+           <h2 className="m-0 text-[clamp(2rem,4vw,3.2rem)] leading-none text-[#1E3A5F]">{copy.takingTest}</h2>
+           <p className="m-0 max-w-3xl text-sm text-[#5f7287] md:text-base">
+             {copy.takingDescription}
+           </p>
         </section>
 
         {generateTestMutation.isPending && !activeTest ? (
           <Card as="section" className="flex min-h-80 items-center justify-center gap-3 py-12">
             <Spinner className="border-[#d1dceb] border-t-[#2C5F8A]" />
-            <span className="text-sm text-[#5f7287]">Generando el test</span>
+             <span className="text-sm text-[#5f7287]">{copy.generating}</span>
           </Card>
         ) : null}
 
         {sessionError && !activeTest ? (
           <Card as="section" className="grid gap-4 border-[#f1d7d7] bg-[#fff9f9]">
             <div className="grid gap-2">
-              <h3 className="m-0 text-2xl text-[#1E3A5F]">No pudimos abrir el examen</h3>
+               <h3 className="m-0 text-2xl text-[#1E3A5F]">{copy.cannotOpen}</h3>
               <p className="m-0 text-sm leading-6 text-[#5f7287]">{sessionError}</p>
             </div>
 
             <div className="flex flex-wrap gap-3">
-              <Button type="button" onClick={handleBackToModeSelection}>Volver a tipos de test</Button>
-              <Button type="button" variant="secondary" onClick={handleChangePermit}>Cambiar permiso</Button>
-              <Button type="button" variant="secondary" onClick={resetExamState}>Reintentar</Button>
+               <Button type="button" onClick={handleBackToModeSelection}>{copy.backToTypes}</Button>
+               <Button type="button" variant="secondary" onClick={handleChangePermit}>{language === 'en' ? 'Change permit' : 'Cambiar permiso'}</Button>
+               <Button type="button" variant="secondary" onClick={resetExamState}>{copy.retry}</Button>
             </div>
           </Card>
         ) : null}
@@ -473,7 +655,7 @@ export function DashboardTestFlow({ accessToken, onBackToDashboard, backButtonLa
               onSubmit={handleSubmitTest}
               selectedAnswers={selectedAnswers}
               test={activeTest}
-              testLabel={getTestOptionTitle(selectedOption)}
+               testLabel={getTestOptionTitle(selectedOption, language)}
               topics={availableTopics}
             />
           </>
@@ -483,16 +665,16 @@ export function DashboardTestFlow({ accessToken, onBackToDashboard, backButtonLa
   }
 
   if (step === 'mode-selection' && selectedPermit) {
-    const permitPresentation = getPermitPresentation(selectedPermit)
+    const permitPresentation = getPermitPresentation(selectedPermit, language)
 
     return (
       <div className="grid gap-6 xl:gap-7">
-        <TopActionButton label="Cambiar permiso" onClick={handleChangePermit} />
+         <TopActionButton label={language === 'en' ? 'Change permit' : 'Cambiar permiso'} onClick={handleChangePermit} />
 
         <section className="grid gap-2">
-          <p className="m-0 text-sm font-semibold tracking-[0.12em] uppercase text-[#2C5F8A]">Permiso {selectedPermit.code}</p>
-          <h2 className="m-0 text-[clamp(2rem,4vw,3.2rem)] leading-none text-[#1E3A5F]">¿Qué tipo de test quieres hacer?</h2>
-          <p className="m-0 max-w-3xl text-sm text-[#5f7287] md:text-base">Elige entre las siguientes opciones para practicar</p>
+           <p className="m-0 text-sm font-semibold tracking-[0.12em] uppercase text-[#2C5F8A]">{copy.permitLabel(selectedPermit.code)}</p>
+           <h2 className="m-0 text-[clamp(2rem,4vw,3.2rem)] leading-none text-[#1E3A5F]">{copy.whatType}</h2>
+           <p className="m-0 max-w-3xl text-sm text-[#5f7287] md:text-base">{copy.chooseOption}</p>
         </section>
 
         <Card as="section" className="grid gap-6 border-[#dfe7f0] bg-[linear-gradient(180deg,#fdfefe_0%,#f7fafc_100%)]">
@@ -500,14 +682,14 @@ export function DashboardTestFlow({ accessToken, onBackToDashboard, backButtonLa
             <div className="flex items-start gap-4">
               <PermitIllustration icon={permitPresentation.icon} />
               <div>
-                <p className="m-0 text-sm font-semibold text-[#2C5F8A]">Permiso seleccionado</p>
+                 <p className="m-0 text-sm font-semibold text-[#2C5F8A]">{copy.selectedPermit}</p>
                 <strong className="mt-1 block text-lg text-[#1E3A5F]">{permitPresentation.title}</strong>
               </div>
             </div>
           </div>
 
           <div className="grid gap-4 xl:grid-cols-3">
-            {testOptions.map((option) => (
+             {(language === 'en' ? testOptionsEn : testOptionsEs).map((option) => (
               <button
                 key={option.id}
                 type="button"
@@ -527,15 +709,15 @@ export function DashboardTestFlow({ accessToken, onBackToDashboard, backButtonLa
           {selectedOption === 'topic' ? (
             <section className="grid gap-4 rounded-[24px] border border-[#dbe3ec] bg-white p-5 shadow-[0_20px_45px_-32px_rgba(30,58,95,0.2)]">
               <div className="grid gap-2">
-                <p className="m-0 text-sm font-semibold tracking-[0.12em] uppercase text-[#2C5F8A]">Selección de tema</p>
-                <h3 className="m-0 text-2xl text-[#1E3A5F]">Elige el tema para empezar el test</h3>
-                <p className="m-0 text-sm leading-6 text-[#5f7287]">
-                  Al seleccionar un tema pasas directamente a la fase de hacer test sin salir del dashboard.
-                </p>
-                {topicsQuery.isLoading ? <p className="m-0 text-sm text-[#5f7287]">Cargando temas del backend…</p> : null}
-                {topicsQuery.isError || !topicsQuery.data?.length ? (
-                  <p className="m-0 text-sm text-[#5f7287]">Mostrando temas fallback para el permiso {selectedPermit.code}.</p>
-                ) : null}
+                 <p className="m-0 text-sm font-semibold tracking-[0.12em] uppercase text-[#2C5F8A]">{copy.topicSelection}</p>
+                 <h3 className="m-0 text-2xl text-[#1E3A5F]">{copy.chooseTopic}</h3>
+                 <p className="m-0 text-sm leading-6 text-[#5f7287]">
+                   {copy.chooseTopicDescription}
+                 </p>
+                 {topicsQuery.isLoading ? <p className="m-0 text-sm text-[#5f7287]">{copy.loadingTopics}</p> : null}
+                 {topicsQuery.isError || !topicsQuery.data?.length ? (
+                   <p className="m-0 text-sm text-[#5f7287]">{copy.fallbackTopics(selectedPermit.code)}</p>
+                 ) : null}
               </div>
 
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -547,18 +729,18 @@ export function DashboardTestFlow({ accessToken, onBackToDashboard, backButtonLa
                     className="group grid gap-2 rounded-[20px] border border-[#dbe3ec] bg-[#f9fbfd] p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C5F8A]"
                   >
                     <span className="inline-flex w-fit rounded-full bg-[#eef5ff] px-3 py-1 text-xs font-semibold text-[#2453d0]">
-                      Tema {topic.topic_number}
-                    </span>
-                    <strong className="text-base text-[#1E3A5F]">{topic.name}</strong>
-                    <span className="text-sm text-[#5f7287]">Abrir placeholder de examen para este bloque del permiso {selectedPermit.code}.</span>
-                  </button>
+                       {copy.topic} {topic.topic_number}
+                     </span>
+                     <strong className="text-base text-[#1E3A5F]">{topic.name}</strong>
+                     <span className="text-sm text-[#5f7287]">{copy.openPlaceholder(selectedPermit.code)}</span>
+                   </button>
                 ))}
               </div>
 
               {availableTopics.length === 0 ? (
                 <p className="m-0 rounded-[20px] bg-[#f6f9fc] p-4 text-sm text-[#5f7287]">
-                  No encontramos temas para este permiso todavía. Prueba con otro permiso o vuelve más tarde.
-                </p>
+                   {copy.noTopics}
+                 </p>
               ) : null}
             </section>
           ) : null}
@@ -572,22 +754,22 @@ export function DashboardTestFlow({ accessToken, onBackToDashboard, backButtonLa
       <TopActionButton label={backButtonLabel} onClick={onBackToDashboard} />
 
       <section className="grid gap-2">
-        <p className="m-0 text-sm font-semibold tracking-[0.12em] uppercase text-[#2C5F8A]">Nuevo test</p>
-        <h2 className="m-0 text-[clamp(2rem,4vw,3.2rem)] leading-none text-[#1E3A5F]">Selecciona el permiso</h2>
-        <p className="m-0 max-w-3xl text-sm text-[#5f7287] md:text-base">
-          Elige el tipo de permiso sobre el que quieres realizar el test
-        </p>
+         <p className="m-0 text-sm font-semibold tracking-[0.12em] uppercase text-[#2C5F8A]">{copy.newTest}</p>
+         <h2 className="m-0 text-[clamp(2rem,4vw,3.2rem)] leading-none text-[#1E3A5F]">{copy.selectPermit}</h2>
+         <p className="m-0 max-w-3xl text-sm text-[#5f7287] md:text-base">
+           {copy.selectPermitDescription}
+         </p>
       </section>
 
       <div className="grid gap-4">
         {permits.map((permit) => {
-          const presentation = getPermitPresentation(permit)
+          const presentation = getPermitPresentation(permit, language)
 
           return (
             <button
               key={permit.code}
               type="button"
-              aria-label={`Comenzar ${presentation.title}`}
+               aria-label={`${copy.start} ${presentation.title}`}
               onClick={() => handlePermitSelect(permit)}
               className="group relative grid min-h-[12.25rem] w-full gap-4 overflow-hidden rounded-[28px] border border-[#d9e3ee] bg-white px-5 py-4 text-left shadow-[0_22px_45px_-32px_rgba(30,58,95,0.3)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#b9d0e6] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C5F8A] md:grid-cols-[1fr_auto]"
             >
@@ -619,7 +801,7 @@ export function DashboardTestFlow({ accessToken, onBackToDashboard, backButtonLa
 
                 <div className="grid gap-2">
                   <h3 className="m-0 text-[clamp(2rem,4vw,2.5rem)] font-bold tracking-[-0.03em] text-white">
-                    Permiso {presentation.code}
+                     {copy.permit} {presentation.code}
                     <span className="ml-2 text-[17px] font-medium text-[rgba(255,255,255,0.72)]">- {presentation.title.split(' - ')[1] ?? permit.name}</span>
                   </h3>
                   <p className="m-0 max-w-2xl text-[15px] leading-[1.5] text-[rgba(255,255,255,0.76)]">{presentation.description}</p>
@@ -628,8 +810,8 @@ export function DashboardTestFlow({ accessToken, onBackToDashboard, backButtonLa
 
               <span className="relative z-10 inline-flex items-end justify-end md:self-end">
                 <span className="inline-flex items-center gap-2 rounded-[18px] border border-[rgba(255,255,255,0.22)] bg-[rgba(255,255,255,0.08)] px-4 py-3 text-[15px] font-medium text-white backdrop-blur-sm">
-                  <span>Comenzar</span>
-                  <ArrowRightIcon />
+                   <span>{copy.start}</span>
+                   <ArrowRightIcon />
                 </span>
               </span>
             </button>
@@ -677,6 +859,7 @@ function FlowOptionIcon({ icon, accent }: { icon: TestOption['icon']; accent: Te
   )
 }
 
-function getTestOptionTitle(optionId: TestOption['id']) {
-  return testOptions.find((option) => option.id === optionId)?.title ?? 'Modo de test'
+function getTestOptionTitle(optionId: TestOption['id'], language: 'es' | 'en') {
+  const options = language === 'en' ? testOptionsEn : testOptionsEs
+  return options.find((option) => option.id === optionId)?.title ?? (language === 'en' ? 'Test mode' : 'Modo de test')
 }

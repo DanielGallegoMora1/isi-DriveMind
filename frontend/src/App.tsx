@@ -1,63 +1,18 @@
-import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
-import { AppShell } from './components/app-shell'
-import { useAuth } from './features/auth/auth-context'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { LoginOnlyOutlet, ProtectedLayout } from './app-route-gates'
 import { AuthProvider } from './features/auth/auth-provider'
+import { I18nProvider } from './features/i18n'
 import { AiChatPage } from './pages/ai-chat-page'
+import { ContactSupportPage } from './pages/contact-support-page'
 import { HomePage } from './pages/home-page'
 import { HelpCenterPage } from './pages/help-center-page'
 import { LoginPage } from './pages/login-page'
 import { PrivacyPolicyPage } from './pages/privacy-policy-page'
+import { SendFeedbackPage } from './pages/send-feedback-page'
 import { SettingsPage } from './pages/settings-page'
 import { StatsPage } from './pages/stats-page'
 import { TermsAndConditionsPage } from './pages/terms-and-conditions-page'
 import { TestsPage } from './pages/tests-page'
-
-function ProtectedLayout() {
-  const { isAuthenticated, isLoading } = useAuth()
-  const location = useLocation()
-
-  if (isLoading) {
-    return (
-      <div className="grid min-h-svh place-items-center px-6 py-12 text-center">
-        <div>
-          <p className="m-0 text-[0.78rem] font-bold tracking-[0.16em] uppercase text-[#7bd0ff]">
-            DriveMind
-          </p>
-          <h1 className="mt-3 text-[#f5f7fb]">Recuperando sesión</h1>
-        </div>
-      </div>
-    )
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate replace state={{ from: location }} to="/login" />
-  }
-
-  return <AppShell />
-}
-
-function LoginOnlyOutlet() {
-  const { isAuthenticated, isLoading } = useAuth()
-
-  if (isLoading) {
-    return (
-      <div className="grid min-h-svh place-items-center px-6 py-12 text-center">
-        <div>
-          <p className="m-0 text-[0.78rem] font-bold tracking-[0.16em] uppercase text-[#7bd0ff]">
-            DriveMind
-          </p>
-          <h1 className="mt-3 text-[#f5f7fb]">Cargando acceso</h1>
-        </div>
-      </div>
-    )
-  }
-
-  if (isAuthenticated) {
-    return <Navigate replace to="/" />
-  }
-
-  return <Outlet />
-}
 
 function AppRoutes() {
   return (
@@ -73,6 +28,8 @@ function AppRoutes() {
         <Route element={<AiChatPage />} path="/ai-chat" />
         <Route element={<SettingsPage />} path="/settings" />
         <Route element={<HelpCenterPage />} path="/settings/help-center" />
+        <Route element={<ContactSupportPage />} path="/settings/contact-support" />
+        <Route element={<SendFeedbackPage />} path="/settings/send-feedback" />
         <Route element={<PrivacyPolicyPage />} path="/settings/privacy-policy" />
         <Route element={<TermsAndConditionsPage />} path="/settings/terms-and-conditions" />
       </Route>
@@ -84,11 +41,13 @@ function AppRoutes() {
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
-    </AuthProvider>
+    <I18nProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </AuthProvider>
+    </I18nProvider>
   )
 }
 

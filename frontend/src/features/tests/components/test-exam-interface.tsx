@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { clsx } from 'clsx'
 import { Card } from '../../../components/ui/card'
 import { ArrowLeftIcon } from '../../../components/icons'
+import { useI18n } from '../../i18n'
 import { formatElapsedTime, getModeBadge } from '../test-session-helpers'
 import type { GeneratedTest, TestOptionLabel, TestResultReviewItem, Topic } from '../types'
 
@@ -32,9 +33,11 @@ const optionLabelMap: Record<TestOptionLabel, string> = {
   c: 'C',
 }
 
-function getTopicName(topics: Topic[], topicId: number) {
+function getTopicName(topics: Topic[], topicId: number, language: 'es' | 'en') {
   const topic = topics.find((item) => item.id === topicId)
-  return topic ? `Tema ${topic.topic_number}. ${topic.name}` : `Tema ${topicId}`
+  return topic
+    ? `${language === 'en' ? 'Topic' : 'Tema'} ${topic.topic_number}. ${topic.name}`
+    : `${language === 'en' ? 'Topic' : 'Tema'} ${topicId}`
 }
 
 function getReviewOptionClasses(reviewState: 'correct' | 'incorrect' | 'neutral', isSelected: boolean) {
@@ -115,6 +118,7 @@ export function TestExamInterface({
   isSubmitting,
   reviewItems = [],
 }: TestExamInterfaceProps) {
+  const { language } = useI18n()
   const activeQuestionIndex = Math.max(test.questions.findIndex((question) => question.id === activeQuestionId), 0)
   const activeQuestion = test.questions[activeQuestionIndex]
   const progressValue = test.questions.length > 0 ? (answeredCount / test.questions.length) * 100 : 0
@@ -167,6 +171,55 @@ export function TestExamInterface({
 
   const activeReviewItem = reviewItemsByQuestionId[activeQuestion.id]
   const isActiveQuestionUnanswered = isReviewMode && activeReviewItem?.is_answered === false
+  const copy = language === 'en'
+    ? {
+        backToResult: 'Back to result',
+        backToTestTypes: 'Back to test types',
+        goToDashboard: 'Go to dashboard',
+        changePermit: 'Change permit',
+        examProgress: 'Exam progress',
+        time: 'Time',
+        question: 'Question',
+        of: 'of',
+        unanswered: 'Unanswered · does not count as a mistake',
+        imageSupport: 'Question with supporting image',
+        imageDescription: 'The backend indicates visual support for this question.',
+        previous: 'Previous',
+        next: 'Next',
+        finishTest: 'Finish test',
+        correcting: 'Correcting…',
+        reviewAnswers: 'Answer review',
+        questionMap: 'Question map',
+        withImage: 'With image',
+        correct: 'Correct',
+        incorrect: 'Incorrect',
+        unansweredShort: 'Unanswered',
+        generateAnother: 'Generate another test',
+      }
+    : {
+        backToResult: 'Volver al resultado',
+        backToTestTypes: 'Volver a los tipos de test',
+        goToDashboard: 'Ir al dashboard',
+        changePermit: 'Cambiar permiso',
+        examProgress: 'Progreso del examen',
+        time: 'Tiempo',
+        question: 'Pregunta',
+        of: 'de',
+        unanswered: 'Sin responder · no suma como fallo',
+        imageSupport: 'Pregunta con imagen de apoyo',
+        imageDescription: 'El backend indica soporte visual para esta pregunta.',
+        previous: 'Anterior',
+        next: 'Siguiente',
+        finishTest: 'Finalizar test',
+        correcting: 'Corrigiendo…',
+        reviewAnswers: 'Revisión de respuestas',
+        questionMap: 'Mapa de preguntas',
+        withImage: 'Con imagen',
+        correct: 'Correcta',
+        incorrect: 'Incorrecta',
+        unansweredShort: 'Sin responder',
+        generateAnother: 'Generar otro test',
+      }
 
   return (
     <section className="grid gap-6 text-[#1E3A5F]">
@@ -177,7 +230,7 @@ export function TestExamInterface({
           className="inline-flex w-fit items-center gap-2 rounded-full bg-transparent px-1 py-1 text-sm font-semibold text-[#2C5F8A] transition-colors duration-200 hover:text-[#1E3A5F]"
         >
           <ArrowLeftIcon />
-          <span>{isReviewMode ? 'Volver al resultado' : 'Volver a los tipos de test'}</span>
+          <span>{isReviewMode ? copy.backToResult : copy.backToTestTypes}</span>
         </button>
 
         <button
@@ -185,17 +238,17 @@ export function TestExamInterface({
           onClick={isReviewMode ? onBackToDashboard : onChangePermit}
           className="inline-flex w-fit items-center gap-2 rounded-full bg-transparent px-1 py-1 text-sm font-semibold text-[#2C5F8A] transition-colors duration-200 hover:text-[#1E3A5F]"
         >
-          <span>{isReviewMode ? 'Ir al dashboard' : 'Cambiar permiso'}</span>
+          <span>{isReviewMode ? copy.goToDashboard : copy.changePermit}</span>
         </button>
       </div>
 
       <header className="grid gap-4 rounded-[16px] border border-white/70 bg-white/90 px-5 py-4 shadow-[0_18px_40px_-28px_rgba(30,58,95,0.28)] backdrop-blur md:grid-cols-[minmax(0,220px)_1fr_minmax(0,220px)] md:items-center md:px-6">
         <div className="grid gap-2">
           <span className="inline-flex w-fit rounded-full bg-[#eef5ff] px-3 py-1 text-xs font-semibold tracking-[0.12em] uppercase text-[#2453d0]">
-            {getModeBadge(test.mode, testLabel)}
-          </span>
+             {getModeBadge(test.mode, testLabel, language)}
+           </span>
           {test.topic_id ? (
-            <span className="text-sm font-semibold text-[#2E7D5B]">{getTopicName(topics, test.topic_id)}</span>
+            <span className="text-sm font-semibold text-[#2E7D5B]">{getTopicName(topics, test.topic_id, language)}</span>
           ) : null}
         </div>
 
@@ -207,14 +260,14 @@ export function TestExamInterface({
             />
           </div>
           <div className="flex items-center justify-between text-xs font-medium text-[#6A7E95]">
-            <span>Progreso del examen</span>
+            <span>{copy.examProgress}</span>
             <span>{Math.round(progressValue)}%</span>
           </div>
         </div>
 
         <div className="flex items-center justify-between gap-3 rounded-[14px] bg-[#F5F7FA] px-4 py-3 md:min-w-[180px] md:justify-self-end">
           <div>
-            <p className="m-0 text-xs uppercase tracking-[0.16em] text-[#6A7E95]">Tiempo</p>
+            <p className="m-0 text-xs uppercase tracking-[0.16em] text-[#6A7E95]">{copy.time}</p>
             <p className="m-0 mt-1 text-lg font-semibold text-[#1E3A5F]">{formatElapsedTime(elapsedSeconds)}</p>
           </div>
           <span className="text-xs font-semibold text-[#6A7E95]">{answeredCount}/{test.questions.length}</span>
@@ -226,10 +279,10 @@ export function TestExamInterface({
           <div className="grid gap-6">
             <div className="flex flex-wrap gap-3">
               <span className="rounded-full bg-[#EAF1F7] px-4 py-2 text-sm font-semibold text-[#1E3A5F]">
-                Pregunta {activeQuestionIndex + 1} de {test.questions.length}
+                {copy.question} {activeQuestionIndex + 1} {copy.of} {test.questions.length}
               </span>
               <span className="rounded-full bg-[#EDF7F1] px-4 py-2 text-sm font-semibold text-[#2E7D5B]">
-                {getTopicName(topics, activeQuestion.topic_id)}
+                {getTopicName(topics, activeQuestion.topic_id, language)}
               </span>
             </div>
 
@@ -240,8 +293,8 @@ export function TestExamInterface({
               {isActiveQuestionUnanswered ? (
                 <p className="m-0 inline-flex w-fit items-center gap-2 rounded-full bg-[#FFF7E6] px-3 py-1 text-sm font-semibold text-[#9A640D]">
                   <span className="size-2 rounded-full bg-[#D69E2E]" />
-                  Sin responder · no suma como fallo
-                </p>
+                   {copy.unanswered}
+                 </p>
               ) : null}
             </div>
 
@@ -251,9 +304,9 @@ export function TestExamInterface({
                 <div className="relative grid gap-2">
                   <span className="inline-flex w-fit items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#2C5F8A] shadow-[0_12px_30px_-22px_rgba(30,58,95,0.35)]">
                     <span className="size-2 rounded-full bg-[#F59E0B]" />
-                    Pregunta con imagen de apoyo
+                    {copy.imageSupport}
                   </span>
-                  <p className="m-0 text-sm text-[#4E6378]">{activeQuestion.image_description ?? 'El backend indica soporte visual para esta pregunta.'}</p>
+                  <p className="m-0 text-sm text-[#4E6378]">{activeQuestion.image_description ?? copy.imageDescription}</p>
                 </div>
               </div>
             ) : null}
@@ -314,8 +367,8 @@ export function TestExamInterface({
                 onClick={() => goToQuestion(test.questions[activeQuestionIndex - 1]?.id ?? activeQuestion.id)}
                 type="button"
               >
-                Anterior
-              </button>
+                 {copy.previous}
+               </button>
 
               <button
                 className={clsx(
@@ -347,9 +400,9 @@ export function TestExamInterface({
                 }}
                 type="button"
               >
-                {isReviewMode ? (isLastQuestion ? 'Volver al resultado' : 'Siguiente') : isLastQuestion ? (isSubmitting ? 'Corrigiendo…' : 'Finalizar test') : 'Siguiente'}
-                <span aria-hidden="true">{isReviewMode && isLastQuestion ? '↩' : isLastQuestion ? '⚑' : '→'}</span>
-              </button>
+                 {isReviewMode ? (isLastQuestion ? copy.backToResult : copy.next) : isLastQuestion ? (isSubmitting ? copy.correcting : copy.finishTest) : copy.next}
+                 <span aria-hidden="true">{isReviewMode && isLastQuestion ? '↩' : isLastQuestion ? '⚑' : '→'}</span>
+               </button>
             </div>
           </div>
         </Card>
@@ -357,7 +410,7 @@ export function TestExamInterface({
         <Card as="aside" className="rounded-[16px] p-5 md:p-6">
           <div className="grid gap-6">
             <div>
-              <h2 className="m-0 text-xl font-semibold text-[#1E3A5F]">{isReviewMode ? 'Revisión de respuestas' : 'Mapa de preguntas'}</h2>
+               <h2 className="m-0 text-xl font-semibold text-[#1E3A5F]">{isReviewMode ? copy.reviewAnswers : copy.questionMap}</h2>
             </div>
 
             <div className="grid grid-cols-5 gap-3">
@@ -374,7 +427,7 @@ export function TestExamInterface({
                   {index + 1}
                   {question.requires_image ? (
                     <span
-                      aria-label="Con imagen"
+                       aria-label={copy.withImage}
                       className="absolute top-1.5 right-1.5 size-2.5 rounded-full bg-[#F59E0B] ring-2 ring-white"
                     />
                   ) : null}
@@ -385,14 +438,14 @@ export function TestExamInterface({
             {isReviewMode ? (
               <div className="flex flex-wrap gap-3 text-xs font-semibold text-[#5F7287]">
                 <span className="inline-flex items-center gap-2 rounded-full bg-[#EDF7F1] px-3 py-1 text-[#1D5F45]">
-                  <span className="size-2 rounded-full bg-[#2E7D5B]" /> Correcta
-                </span>
-                <span className="inline-flex items-center gap-2 rounded-full bg-[#FFF1F1] px-3 py-1 text-[#A52F2F]">
-                  <span className="size-2 rounded-full bg-[#D14343]" /> Incorrecta
-                </span>
-                <span className="inline-flex items-center gap-2 rounded-full bg-[#FFF7E6] px-3 py-1 text-[#9A640D]">
-                  <span className="size-2 rounded-full bg-[#D69E2E]" /> Sin responder
-                </span>
+                   <span className="size-2 rounded-full bg-[#2E7D5B]" /> {copy.correct}
+                 </span>
+                 <span className="inline-flex items-center gap-2 rounded-full bg-[#FFF1F1] px-3 py-1 text-[#A52F2F]">
+                   <span className="size-2 rounded-full bg-[#D14343]" /> {copy.incorrect}
+                 </span>
+                 <span className="inline-flex items-center gap-2 rounded-full bg-[#FFF7E6] px-3 py-1 text-[#9A640D]">
+                   <span className="size-2 rounded-full bg-[#D69E2E]" /> {copy.unansweredShort}
+                 </span>
               </div>
             ) : null}
 
@@ -403,8 +456,8 @@ export function TestExamInterface({
                 type="button"
               >
                 <span aria-hidden="true">↩</span>
-                <span>Volver al resultado</span>
-              </button>
+                 <span>{copy.backToResult}</span>
+               </button>
             ) : (
               <button
                 className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#2E7D5B] px-5 py-3 text-sm font-semibold text-white shadow-[0_20px_35px_-24px_rgba(46,125,91,0.95)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#276b4d] disabled:cursor-not-allowed disabled:bg-[#97c7b1]"
@@ -413,8 +466,8 @@ export function TestExamInterface({
                 type="button"
               >
                 <span aria-hidden="true">⚑</span>
-                <span>{isSubmitting ? 'Corrigiendo…' : 'Finalizar test'}</span>
-              </button>
+                 <span>{isSubmitting ? copy.correcting : copy.finishTest}</span>
+               </button>
             )}
 
             {isReviewMode ? null : (
@@ -423,8 +476,8 @@ export function TestExamInterface({
                 onClick={onStartAnotherTest}
                 className="inline-flex min-h-12 items-center justify-center rounded-full border border-[#d8e3ee] bg-white px-5 py-3 text-sm font-semibold text-[#1E3A5F] transition-colors duration-200 hover:bg-[#f7fafd]"
               >
-                Generar otro test
-              </button>
+                 {copy.generateAnother}
+               </button>
             )}
           </div>
         </Card>
@@ -433,4 +486,3 @@ export function TestExamInterface({
     </section>
   )
 }
-

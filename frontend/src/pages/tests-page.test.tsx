@@ -98,4 +98,25 @@ describe('TestsPage', () => {
     expect(await screen.findByText('Revisión de respuestas')).toBeInTheDocument()
     expect(screen.getByText(/Sin responder · no suma como fallo/i)).toBeInTheDocument()
   })
+
+  it('renderiza las superficies principales del flujo de tests en inglés', async () => {
+    const user = userEvent.setup()
+
+    renderWithProviders(<TestsPage />, undefined, { language: 'en' })
+
+    expect(await screen.findByRole('heading', { name: 'My Tests' })).toBeInTheDocument()
+    expect(screen.getByText('Tests taken')).toBeInTheDocument()
+    expect(screen.getByLabelText('Number of tests in history')).toHaveTextContent('3 Tests')
+
+    await user.click((await screen.findAllByRole('button', { name: /^take test$/i }))[0])
+
+    expect(screen.getByRole('button', { name: /back to my tests/i })).toBeInTheDocument()
+    expect(screen.getByText('Select permit')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /start b permit - cars/i }))
+    await user.click(screen.getByRole('button', { name: /random test/i }))
+
+    expect(await screen.findByText('Question map')).toBeInTheDocument()
+    expect(screen.getByText((_, node) => node?.textContent === 'Question 1 of 30')).toBeInTheDocument()
+  })
 })
