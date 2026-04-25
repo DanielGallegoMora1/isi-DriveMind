@@ -6,6 +6,7 @@ import { EmptyState } from '../../../components/ui/empty-state'
 import { Spinner } from '../../../components/ui/spinner'
 import type { AuthUser } from '../../auth/types'
 import { useStats } from '../hooks/use-stats'
+import { parseStatsDate } from '../lib/stats-date'
 import type { StatsHistoryItem } from '../types'
 
 type StatsOverviewProps = {
@@ -23,7 +24,7 @@ function formatDate(value: string) {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
-  }).format(new Date(value))
+  }).format(parseStatsDate(value))
 }
 
 function getRecentTestLabel(item: StatsHistoryItem) {

@@ -7,6 +7,7 @@ const coreBaseUrl = `${env.coreServiceUrl}/v1`
 export function getStats(token: string) {
   return requestJson<StatsResponse>(`${coreBaseUrl}/stats`, {
     method: 'GET',
+    cache: 'no-store',
     token,
   })
 }

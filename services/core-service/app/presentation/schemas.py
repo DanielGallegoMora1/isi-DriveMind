@@ -1,7 +1,15 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import List, Optional, Literal
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_serializer, field_validator, model_validator
+
+
+def _serialize_utc_datetime(value: datetime | None) -> str | None:
+    if value is None:
+        return None
+
+    normalized = value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+    return normalized.isoformat().replace("+00:00", "Z")
 
 # --- Common Responses ---
 class PaginatedResponse(BaseModel):
@@ -140,6 +148,10 @@ class StatsSummary(BaseModel):
     average_time_seconds: float
     total_time_seconds: int
 
+    @field_serializer("last_activity_at")
+    def serialize_last_activity_at(self, value: datetime | None) -> str | None:
+        return _serialize_utc_datetime(value)
+
 
 class StatsGoal(BaseModel):
     target_accuracy_pct: float
@@ -157,6 +169,13 @@ class StatsHistoryItem(BaseModel):
     permit_code: Optional[str] = None
     topic_id: Optional[int] = None
     test_type: Optional[str] = None
+
+    @field_serializer("created_at")
+    def serialize_created_at(self, value: datetime) -> str:
+        serialized = _serialize_utc_datetime(value)
+        if serialized is None:
+            raise ValueError("created_at cannot be null")
+        return serialized
 
 class StatsTrendItem(BaseModel):
     period: str

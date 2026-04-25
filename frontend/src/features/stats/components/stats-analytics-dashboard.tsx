@@ -5,6 +5,7 @@ import { Card } from '../../../components/ui/card'
 import { EmptyState } from '../../../components/ui/empty-state'
 import { Spinner } from '../../../components/ui/spinner'
 import { useStats } from '../hooks/use-stats'
+import { parseStatsDate } from '../lib/stats-date'
 import type {
   AccuracyTrendInsight,
   StatsByTopic,
@@ -28,7 +29,7 @@ const trendPalette = {
 const distributionPalette = ['#2453d0', '#2e7d5b', '#f3a83b', '#8b5cf6', '#ef6b5a']
 
 const testTypeLabels: Record<string, string> = {
-  PERMIT: 'Por permiso',
+  PERMIT: 'Aleatorio',
   TOPIC: 'Por tema',
   RANDOM: 'Aleatorio',
   FAILED: 'Preguntas falladas',
@@ -177,7 +178,7 @@ function TrendCard({ series, subtitle }: { series: TrendSeriesItem[]; subtitle: 
 function TrendChart({ series }: { series: TrendSeriesItem[] }) {
   const width = 620
   const height = 260
-  const padding = { top: 20, right: 18, bottom: 34, left: 32 }
+  const padding = { top: 20, right: 18, bottom: 34, left: 52 }
   const innerWidth = width - padding.left - padding.right
   const innerHeight = height - padding.top - padding.bottom
   const ticks = [0, 25, 50, 75, 100]
@@ -202,7 +203,7 @@ function TrendChart({ series }: { series: TrendSeriesItem[] }) {
           return (
             <g key={tick}>
               <line x1={padding.left} x2={width - padding.right} y1={y} y2={y} stroke="#e8eef5" strokeDasharray="4 6" />
-              <text x={8} y={y + 4} fill="#7a8ca0" fontSize="11">
+              <text x={padding.left - 12} y={y + 4} fill="#7a8ca0" fontSize="11" textAnchor="end">
                 {tick}%
               </text>
             </g>
@@ -238,7 +239,7 @@ function TrendChart({ series }: { series: TrendSeriesItem[] }) {
 }
 
 function DistributionCard({ items, totalTests }: { items: TestTypeDistributionItem[]; totalTests: number }) {
-  const normalizedItems = items.slice(0, 5).map((item, index) => ({
+  const normalizedItems = normalizeDistributionItems(items).slice(0, 5).map((item, index) => ({
     ...item,
     label: testTypeLabels[item.test_type] ?? item.test_type,
     color: distributionPalette[index % distributionPalette.length],
@@ -326,6 +327,9 @@ function DonutChart({
 }
 
 function ByTopicCard({ topics }: { topics: StatsByTopic[] }) {
+  const topicLabelFormatter = buildTopicChartLabelFormatter(topics)
+  const chartMinWidth = Math.max(topics.length * 108, 640)
+
   return (
     <Card as="section" className="grid gap-5 p-6 md:p-7">
       <div className="grid gap-1">
@@ -334,34 +338,59 @@ function ByTopicCard({ topics }: { topics: StatsByTopic[] }) {
       </div>
 
       {topics.length > 0 ? (
-        <div className="overflow-x-auto">
-          <div className="grid min-w-[640px] grid-cols-[auto_1fr] gap-4">
-          <div className="grid h-72 grid-rows-5 text-xs text-[#7a8ca0]">
+        <div className="overflow-x-auto pb-4">
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-4" style={{ minWidth: `${chartMinWidth}px` }}>
+            <div className="relative h-80 w-10 pt-2 text-xs text-[#7a8ca0]">
               {[100, 75, 50, 25, 0].map((tick) => (
-                <span key={tick}>{tick}%</span>
+                <span
+                  key={tick}
+                  className="absolute right-0"
+                  style={getTopicAxisLabelStyle(tick)}
+                >
+                  {tick}%
+                </span>
               ))}
             </div>
-            <div className="relative grid h-72 grid-cols-[repeat(auto-fit,minmax(72px,1fr))] items-end gap-4 border-l border-b border-[#e6edf5] px-4 pb-2">
-              {[25, 50, 75, 100].map((tick) => (
-                <div key={tick} className="absolute inset-x-0 border-t border-dashed border-[#edf2f7]" style={{ bottom: `${tick}%` }} />
-              ))}
-              {topics.map((topic) => (
-                <div key={topic.topic_id} className="grid h-full grid-rows-[1fr_auto] items-end gap-3">
-                  <div className="flex h-full items-end justify-center">
-                    <div
-                      aria-label={`${topic.topic_name ?? `Tema ${topic.topic_id}`}: ${formatPercentage(topic.accuracy_pct)}`}
-                      className="w-full rounded-t-[18px] bg-[linear-gradient(180deg,#7aa8ff_0%,#2453d0_100%)] shadow-[0_18px_26px_-22px_rgba(36,83,208,0.9)]"
-                      style={{ height: `${Math.max(topic.accuracy_pct, topic.accuracy_pct > 0 ? 8 : 0)}%` }}
-                    />
+            <div className="grid min-w-0 gap-4">
+              <div
+                className="relative grid h-80 items-end gap-4 border-l border-b border-[#e6edf5] px-4 pt-2"
+                style={{ gridTemplateColumns: `repeat(${topics.length}, minmax(0, 1fr))` }}
+              >
+                {[25, 50, 75, 100].map((tick) => (
+                  <div
+                    key={tick}
+                    className="pointer-events-none absolute inset-x-0 border-t border-dashed border-[#edf2f7]"
+                    style={{ bottom: `${tick}%` }}
+                  />
+                ))}
+                {topics.map((topic) => (
+                  <div key={topic.topic_id} className="flex h-full min-w-0 items-end justify-center">
+                    <div className="flex h-full w-full min-w-0 flex-col justify-end">
+                      <div className="flex min-h-0 flex-1 items-end">
+                        <div
+                          aria-label={`${topicLabelFormatter(topic)}: ${formatPercentage(topic.accuracy_pct)}`}
+                          className="w-full rounded-t-[18px] bg-[linear-gradient(180deg,#7aa8ff_0%,#2453d0_100%)] shadow-[0_18px_26px_-22px_rgba(36,83,208,0.9)]"
+                          style={{ height: `${Math.max(topic.accuracy_pct, topic.accuracy_pct > 0 ? 8 : 0)}%` }}
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div className="grid gap-1 text-center">
+                ))}
+              </div>
+
+              <div
+                className="grid gap-2 px-4 pb-2"
+                style={{ gridTemplateColumns: `repeat(${topics.length}, minmax(0, 1fr))` }}
+              >
+                {topics.map((topic) => (
+                  <div key={`label-${topic.topic_id}`} className="grid min-w-0 gap-1 text-center">
                     <strong className="text-sm text-[#1E3A5F]">{Math.round(topic.accuracy_pct)}%</strong>
-                    <span className="origin-top text-xs leading-tight text-[#5f7287] [writing-mode:vertical-rl] rotate-180 xl:[writing-mode:horizontal-tb] xl:rotate-0">
-                      {topic.topic_name ?? `Tema ${topic.topic_id}`}
+                    <span className="block min-w-0 truncate text-xs leading-tight text-[#5f7287]" title={topicLabelFormatter(topic)}>
+                      {topicLabelFormatter(topic)}
                     </span>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -480,6 +509,32 @@ function buildTrendSeries(trend: StatsTrendItem[], history: StatsHistoryItem[]):
   })
 }
 
+function normalizeDistributionItems(items: TestTypeDistributionItem[]): TestTypeDistributionItem[] {
+  const grouped = new Map<string, TestTypeDistributionItem>()
+
+  items.forEach((item) => {
+    const normalizedType = item.test_type === 'TOPIC' || item.test_type === 'FAILED' ? item.test_type : 'RANDOM'
+    const current = grouped.get(normalizedType)
+
+    if (current) {
+      grouped.set(normalizedType, {
+        test_type: normalizedType,
+        tests: current.tests + item.tests,
+        percentage: current.percentage + item.percentage,
+      })
+      return
+    }
+
+    grouped.set(normalizedType, {
+      test_type: normalizedType,
+      tests: item.tests,
+      percentage: item.percentage,
+    })
+  })
+
+  return [...grouped.values()].sort((left, right) => right.tests - left.tests)
+}
+
 function buildPeriodLabel(trend: StatsTrendItem[], weeklyActivity: WeeklyActivityItem[]) {
   const firstPeriod = trend[0]?.period ?? weeklyActivity[0]?.date
   const lastPeriod = trend[trend.length - 1]?.period ?? weeklyActivity[weeklyActivity.length - 1]?.date
@@ -548,7 +603,7 @@ function buildStrongestTopicCopy(topic: TopicInsight | null) {
     return 'Todavía no hay volumen suficiente para identificar un tema claramente fuerte.'
   }
 
-  return `${topic.topic_name ?? `Tema ${topic.topic_id}`} destaca con ${formatPercentage(topic.accuracy_pct)} de aciertos y un balance de ${topic.correct} correctas frente a ${topic.wrong} falladas.`
+  return `${formatTopicLabel(topic)} destaca con ${formatPercentage(topic.accuracy_pct)} de aciertos y un balance de ${topic.correct} correctas frente a ${topic.wrong} falladas.`
 }
 
 function buildImprovementCopy(topic: TopicInsight | null) {
@@ -556,7 +611,24 @@ function buildImprovementCopy(topic: TopicInsight | null) {
     return 'Aún no hay datos comparables para señalar una zona de mejora concreta.'
   }
 
-  return `${topic.topic_name ?? `Tema ${topic.topic_id}`} es el bloque que más conviene repasar: ${formatPercentage(topic.accuracy_pct)} de aciertos y ${topic.wrong} errores acumulados.`
+  return `${formatTopicLabel(topic)} es el bloque que más conviene repasar: ${formatPercentage(topic.accuracy_pct)} de aciertos y ${topic.wrong} errores acumulados.`
+}
+
+function formatTopicLabel(topic: Pick<StatsByTopic, 'topic_id' | 'topic_name'> | Pick<TopicInsight, 'topic_id' | 'topic_name'>) {
+  const name = topic.topic_name?.trim()
+  return name && name.length <= 24 ? name : `Tema ${topic.topic_id}`
+}
+
+function buildTopicChartLabelFormatter(topics: StatsByTopic[]) {
+  const useTopicNames = topics.every((topic) => Boolean(topic.topic_name?.trim()))
+
+  return (topic: Pick<StatsByTopic, 'topic_id' | 'topic_name'>) => {
+    if (useTopicNames) {
+      return topic.topic_name!.trim()
+    }
+
+    return `Tema ${topic.topic_id}`
+  }
 }
 
 function buildTrendCopy(trend: AccuracyTrendInsight) {
@@ -580,18 +652,33 @@ function formatPercentage(value: number) {
 }
 
 function formatLongDate(value: string) {
-  return longDateFormatter.format(new Date(value))
+  return longDateFormatter.format(parseStatsDate(value))
 }
 
 function formatWeekDay(value: string) {
-  const label = weekDayFormatter.format(new Date(value))
+  const label = weekDayFormatter.format(parseStatsDate(value))
   return label.endsWith('.') ? label.slice(0, -1) : label
 }
 
 function formatChartDay(value: string) {
-  return shortDateFormatter.format(new Date(value))
+  return shortDateFormatter.format(parseStatsDate(value))
 }
 
 function clamp(value: number) {
   return Math.max(0, Math.min(value, 100))
+}
+
+function getTopicAxisLabelStyle(tick: number) {
+  if (tick === 100) {
+    return { top: 0 }
+  }
+
+  if (tick === 0) {
+    return { bottom: 0 }
+  }
+
+  return {
+    bottom: `${tick}%`,
+    transform: 'translateY(50%)',
+  }
 }
