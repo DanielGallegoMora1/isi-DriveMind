@@ -84,3 +84,16 @@ def update_school(
     if phone is not None:
         school.phone = phone
     return school_repo.update(school)
+
+
+def delete_school(
+    school_id: UUID,
+    school_repo: SchoolRepository,
+    user_repo: UserRepository,
+) -> None:
+    school = school_repo.get_by_id(school_id)
+    if not school:
+        raise ValueError("school_not_found")
+
+    school_repo.soft_delete(school_id)
+    user_repo.deactivate_non_system_by_school(school_id)

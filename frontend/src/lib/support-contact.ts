@@ -7,7 +7,8 @@ export type SupportContactPayload = {
 }
 
 // Placeholder local until the project exposes a real support endpoint.
-export async function submitSupportContact(_payload: SupportContactPayload) {
+export async function submitSupportContact(payload: SupportContactPayload) {
+  void payload
   await new Promise((resolve) => window.setTimeout(resolve, 600))
 
   return {

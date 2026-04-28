@@ -313,7 +313,7 @@ export function HelpCenterPage() {
   const copy = helpCenterContent[language]
   const locale = language === 'en' ? 'en-US' : 'es-ES'
   const [searchTerm, setSearchTerm] = useState('')
-  const [activeCategory, setActiveCategory] = useState(copy.allCategories)
+  const [activeCategory, setActiveCategory] = useState<string>(copy.allCategories)
   const [expandedItems, setExpandedItems] = useState<string[]>([])
 
   useEffect(() => {
@@ -325,12 +325,13 @@ export function HelpCenterPage() {
   }, [])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset local filters when switching locales.
     setActiveCategory(copy.allCategories)
     setExpandedItems([])
     setSearchTerm('')
   }, [copy.allCategories])
 
-  const filterCategories = [copy.allCategories, ...copy.visibleFilterCategories]
+  const filterCategories: string[] = [copy.allCategories, ...copy.visibleFilterCategories]
   const totalQuestions = useMemo(
     () => copy.categoriesData.reduce((total, category) => total + category.items.length, 0),
     [copy.categoriesData],

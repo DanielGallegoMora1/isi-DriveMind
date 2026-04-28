@@ -107,3 +107,20 @@ def patch_school(
             status_code=status.HTTP_404_NOT_FOUND, detail="school_not_found"
         )
     return SchoolResponse(**school.__dict__)
+
+
+
+@router.delete("/{school_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_school(
+    school_id: UUID,
+    db: DbDep,
+    _: Annotated[dict, Depends(require_role("system_admin"))],
+) -> None:
+    school_repo = SqlSchoolRepository(db)
+    user_repo = SqlUserRepository(db)
+    try:
+        school_use_cases.delete_school(school_id, school_repo, user_repo)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="school_not_found"
+        )

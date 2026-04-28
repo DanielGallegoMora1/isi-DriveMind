@@ -24,6 +24,9 @@ class UserRepository(ABC):
     def update(self, user: User) -> User: ...
 
     @abstractmethod
+    def deactivate_non_system_by_school(self, school_id: UUID) -> int: ...
+
+    @abstractmethod
     def list_by_school(
         self,
         school_id: UUID,
@@ -55,6 +58,9 @@ class SchoolRepository(ABC):
 
     @abstractmethod
     def update(self, school: School) -> School: ...
+
+    @abstractmethod
+    def soft_delete(self, school_id: UUID) -> School: ...
 
 
 class StudentLicenseRepository(ABC):

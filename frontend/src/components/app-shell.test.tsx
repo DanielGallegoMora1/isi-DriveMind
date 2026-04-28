@@ -3,8 +3,20 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { AppShell } from './app-shell'
 import { AuthContext, type AuthContextValue } from '../features/auth/auth-context'
 import { I18nProvider, type Language } from '../features/i18n'
+import type { AuthUser } from '../features/auth/types'
 
-function createAuthValue(): AuthContextValue {
+const studentUser: AuthUser = {
+  id: 'user-1',
+  email: 'student@drivemind.test',
+  full_name: 'Lucia Perez',
+  role: 'student',
+  school_id: null,
+  is_active: true,
+  created_at: null,
+  updated_at: null,
+}
+
+function createAuthValue(user: AuthUser = studentUser): AuthContextValue {
   return {
     accessToken: 'demo-token',
     changePassword: async () => undefined,
@@ -12,27 +24,19 @@ function createAuthValue(): AuthContextValue {
     isLoading: false,
     login: async () => undefined,
     logout: vi.fn(),
-    user: {
-      id: 'user-1',
-      email: 'student@drivemind.test',
-      full_name: 'Lucia Perez',
-      role: 'student',
-      school_id: null,
-      is_active: true,
-      created_at: null,
-      updated_at: null,
-    },
+    user,
   }
 }
 
-function renderAppShell(language: Language) {
+function renderAppShell(language: Language, user?: AuthUser, initialRoute = '/') {
   return render(
-    <MemoryRouter initialEntries={['/']}>
+    <MemoryRouter initialEntries={[initialRoute]}>
       <I18nProvider initialLanguage={language}>
-        <AuthContext.Provider value={createAuthValue()}>
+        <AuthContext.Provider value={createAuthValue(user)}>
           <Routes>
             <Route element={<AppShell />}>
               <Route element={<div>Outlet content</div>} path="/" />
+              <Route element={<div>Admin outlet</div>} path="/admin" />
             </Route>
           </Routes>
         </AuthContext.Provider>
@@ -64,5 +68,24 @@ describe('AppShell', () => {
     expect(screen.getByRole('link', { name: 'Estadísticas' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Ajustes' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Cerrar sesión' })).toBeInTheDocument()
+  })
+
+  it('renders system-admin shell without student links', () => {
+    renderAppShell('en', {
+      id: 'admin-1',
+      email: 'system.admin@example.com',
+      full_name: 'System Admin',
+      role: 'system_admin',
+      school_id: null,
+      is_active: true,
+      created_at: null,
+      updated_at: null,
+    }, '/admin')
+
+    expect(screen.getByRole('heading', { name: 'System admin dashboard' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Driving schools' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'My Tests' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Statistics' })).not.toBeInTheDocument()
+    expect(screen.getByText('System admin')).toBeInTheDocument()
   })
 })

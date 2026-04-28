@@ -17,7 +17,8 @@ export type SendFeedbackPayload = {
 }
 
 // Simulación local de envío para la interfaz de feedback.
-export async function submitFeedback(_payload: SendFeedbackPayload) {
+export async function submitFeedback(payload: SendFeedbackPayload) {
+  void payload
   await new Promise((resolve) => window.setTimeout(resolve, 700))
 
   return {

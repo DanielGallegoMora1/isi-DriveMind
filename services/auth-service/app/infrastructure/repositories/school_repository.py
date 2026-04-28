@@ -97,6 +97,15 @@ class SqlSchoolRepository(SchoolRepository):
         rows = query.offset(offset).limit(limit).all()
         return [_school_to_domain(r) for r in rows], total
 
+
+    def soft_delete(self, school_id: UUID) -> School:
+        row = self._db.get(orm.SchoolORM, school_id)
+        if not row:
+            raise ValueError(f"School {school_id} not found")
+        row.active = False
+        self._db.flush()
+        return _school_to_domain(row)
+
     def update(self, school: School) -> School:
         row = self._db.get(orm.SchoolORM, school.id)
         if not row:

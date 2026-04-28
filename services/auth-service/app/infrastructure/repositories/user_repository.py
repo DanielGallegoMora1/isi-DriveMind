@@ -65,6 +65,17 @@ class SqlUserRepository(UserRepository):
         rows = query.offset(offset).limit(limit).all()
         return [_to_domain(r) for r in rows], total
 
+
+    def deactivate_non_system_by_school(self, school_id: UUID) -> int:
+        updated = (
+            self._db.query(orm.UserORM)
+            .filter(orm.UserORM.school_id == school_id)
+            .filter(orm.UserORM.role != "system_admin")
+            .update({orm.UserORM.is_active: False}, synchronize_session=False)
+        )
+        self._db.commit()
+        return int(updated)
+
     def create(self, user: User, password_hash: str) -> User:
         row = orm.UserORM(
             id=user.id,

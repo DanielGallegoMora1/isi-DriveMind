@@ -38,6 +38,14 @@ class FakeUserRepository(UserRepository):
             raise ValueError(f"User {user_id} not found")
         setattr(user, "password_hash", password_hash)
 
+    def deactivate_non_system_by_school(self, school_id: UUID) -> int:
+        updated = 0
+        for user in self.users.values():
+            if user.school_id == school_id and user.role != "system_admin":
+                user.is_active = False
+                updated += 1
+        return updated
+
     def list_by_school(
         self,
         school_id: UUID,
@@ -84,6 +92,12 @@ class FakeSchoolRepository(SchoolRepository):
 
     def update(self, school: School) -> School:
         self.schools[school.id] = school
+        return school
+
+    def soft_delete(self, school_id: UUID) -> School:
+        school = self.schools[school_id]
+        school.active = False
+        self.schools[school_id] = school
         return school
 
 

@@ -8,39 +8,64 @@ import { Button } from './ui/button'
 export function AppShell() {
   const { logout, user } = useAuth()
   const { language } = useI18n()
+  const isSystemAdmin = user?.role === 'system_admin'
   const initials = (user?.full_name ?? 'DM')
     .split(' ')
     .filter(Boolean)
     .slice(0, 2)
     .map((chunk) => chunk[0]?.toUpperCase() ?? '')
     .join('')
-  const navigationItems = language === 'en'
-    ? [
-        { to: '/', label: 'Home', icon: HomeIcon },
-        { to: '/ai-chat', label: 'DriveMind AI Assistant', icon: AiChatIcon },
-        { to: '/tests', label: 'My Tests', icon: TestsIcon },
-        { to: '/stats', label: 'Statistics', icon: StatsIcon },
-        { to: '/settings', label: 'Settings', icon: SettingsIcon },
-      ]
-    : [
-        { to: '/', label: 'Inicio', icon: HomeIcon },
-        { to: '/ai-chat', label: 'Asistente IA de DriveMind', icon: AiChatIcon },
-        { to: '/tests', label: 'Mis Tests', icon: TestsIcon },
-        { to: '/stats', label: 'Estadísticas', icon: StatsIcon },
-        { to: '/settings', label: 'Ajustes', icon: SettingsIcon },
-      ]
-  const subtitle = `${formatRole(user?.role, language)} · ${language === 'en' ? 'Permit B' : 'Permiso B'}`
-  const copy = language === 'en'
-    ? {
-        title: 'Student dashboard',
-        description: 'Your daily panel to practice, review progress, and keep your streak alive.',
-        logout: 'Log out',
-      }
-    : {
-        title: 'Panel del alumno',
-        description: 'Tu panel diario para practicar, revisar el progreso y mantener la racha.',
-        logout: 'Cerrar sesión',
-      }
+  const navigationItems = isSystemAdmin
+    ? language === 'en'
+      ? [
+          { to: '/admin', label: 'Driving schools', icon: HomeIcon },
+          { to: '/settings', label: 'Settings', icon: SettingsIcon },
+        ]
+      : [
+          { to: '/admin', label: 'Autoescuelas', icon: HomeIcon },
+          { to: '/settings', label: 'Ajustes', icon: SettingsIcon },
+        ]
+    : language === 'en'
+      ? [
+          { to: '/', label: 'Home', icon: HomeIcon },
+          { to: '/ai-chat', label: 'DriveMind AI Assistant', icon: AiChatIcon },
+          { to: '/tests', label: 'My Tests', icon: TestsIcon },
+          { to: '/stats', label: 'Statistics', icon: StatsIcon },
+          { to: '/settings', label: 'Settings', icon: SettingsIcon },
+        ]
+      : [
+          { to: '/', label: 'Inicio', icon: HomeIcon },
+          { to: '/ai-chat', label: 'Asistente IA de DriveMind', icon: AiChatIcon },
+          { to: '/tests', label: 'Mis Tests', icon: TestsIcon },
+          { to: '/stats', label: 'Estadísticas', icon: StatsIcon },
+          { to: '/settings', label: 'Ajustes', icon: SettingsIcon },
+        ]
+  const subtitle = isSystemAdmin
+    ? formatRole(user?.role, language)
+    : `${formatRole(user?.role, language)} · ${language === 'en' ? 'Permit B' : 'Permiso B'}`
+  const copy = isSystemAdmin
+    ? language === 'en'
+      ? {
+          title: 'System admin dashboard',
+          description: 'Manage driving schools and platform access from one secured workspace.',
+          logout: 'Log out',
+        }
+      : {
+          title: 'Panel de administración',
+          description: 'Gestiona autoescuelas y accesos de la plataforma desde un espacio seguro.',
+          logout: 'Cerrar sesión',
+        }
+    : language === 'en'
+      ? {
+          title: 'Student dashboard',
+          description: 'Your daily panel to practice, review progress, and keep your streak alive.',
+          logout: 'Log out',
+        }
+      : {
+          title: 'Panel del alumno',
+          description: 'Tu panel diario para practicar, revisar el progreso y mantener la racha.',
+          logout: 'Cerrar sesión',
+        }
 
   return (
     <div className="min-h-svh bg-[#F5F7FA] text-[#1E3A5F] lg:grid lg:grid-cols-[280px_1fr]">

@@ -1,8 +1,10 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
-import { LoginOnlyOutlet, ProtectedLayout } from './app-route-gates'
+import { LoginOnlyOutlet, ProtectedLayout, RoleProtectedLayout } from './app-route-gates'
 import { AuthProvider } from './features/auth/auth-provider'
+import { useAuth } from './features/auth'
 import { I18nProvider } from './features/i18n'
 import { AiChatPage } from './pages/ai-chat-page'
+import { AdminDashboardPage } from './pages/admin-dashboard-page'
 import { ContactSupportPage } from './pages/contact-support-page'
 import { HomePage } from './pages/home-page'
 import { HelpCenterPage } from './pages/help-center-page'
@@ -14,6 +16,16 @@ import { StatsPage } from './pages/stats-page'
 import { TermsAndConditionsPage } from './pages/terms-and-conditions-page'
 import { TestsPage } from './pages/tests-page'
 
+function DefaultHomePage() {
+  const { user } = useAuth()
+
+  if (user?.role === 'system_admin') {
+    return <Navigate replace to="/admin" />
+  }
+
+  return <HomePage />
+}
+
 function AppRoutes() {
   return (
     <Routes>
@@ -21,8 +33,12 @@ function AppRoutes() {
         <Route element={<LoginPage />} path="/login" />
       </Route>
 
+      <Route element={<RoleProtectedLayout allowedRoles={['system_admin']} fallbackPath="/" />}>
+        <Route element={<AdminDashboardPage />} path="/admin" />
+      </Route>
+
       <Route element={<ProtectedLayout />}>
-        <Route element={<HomePage />} path="/" />
+        <Route element={<DefaultHomePage />} path="/" />
         <Route element={<TestsPage />} path="/tests" />
         <Route element={<StatsPage />} path="/stats" />
         <Route element={<AiChatPage />} path="/ai-chat" />

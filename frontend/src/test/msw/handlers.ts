@@ -16,6 +16,18 @@ type AiMessage = {
   created_at: string
 }
 
+type School = {
+  id: string
+  name: string
+  email: string
+  tax_id: string | null
+  address: string | null
+  phone: string | null
+  active: boolean
+  created_at: string | null
+  updated_at: string | null
+}
+
 const permitResponse = [
   { id: 1, code: 'B', name: 'Turismos' },
 ]
@@ -220,16 +232,48 @@ const initialAiMessages: AiMessage[] = [
   },
 ]
 
+const initialSchools: School[] = [
+  {
+    id: 'school-centro',
+    name: 'Autoescuela Centro',
+    email: 'centro@school.test',
+    tax_id: null,
+    address: 'Calle Mayor 1',
+    phone: null,
+    active: true,
+    created_at: '2026-04-12T09:00:00Z',
+    updated_at: '2026-04-12T09:00:00Z',
+  },
+  {
+    id: 'school-norte',
+    name: 'Autoescuela Norte',
+    email: 'norte@school.test',
+    tax_id: null,
+    address: 'Avenida Norte 7',
+    phone: null,
+    active: true,
+    created_at: '2026-04-12T09:05:00Z',
+    updated_at: '2026-04-12T09:05:00Z',
+  },
+]
+
 let aiConversationCounter = 2
 let aiMessageCounter = 3
 let aiConversations = cloneAiConversations(initialAiConversations)
 let aiMessages = cloneAiMessages(initialAiMessages)
+let schoolCounter = 3
+let schools = cloneSchools(initialSchools)
 
 export function resetAiAssistantMockState() {
   aiConversationCounter = 2
   aiMessageCounter = 3
   aiConversations = cloneAiConversations(initialAiConversations)
   aiMessages = cloneAiMessages(initialAiMessages)
+}
+
+export function resetSchoolsMockState() {
+  schoolCounter = 3
+  schools = cloneSchools(initialSchools)
 }
 
 export function setAiAssistantMockState(conversations: AiConversation[], messages: AiMessage[]) {
@@ -240,6 +284,69 @@ export function setAiAssistantMockState(conversations: AiConversation[], message
 }
 
 export const handlers = [
+  http.get('/api/v1/auth/schools', ({ request }) => {
+    const url = new URL(request.url)
+    const nameFilter = url.searchParams.get('name')?.trim().toLowerCase()
+    const activeFilter = url.searchParams.get('active')
+    const limit = Number(url.searchParams.get('limit') ?? 20)
+    const offset = Number(url.searchParams.get('offset') ?? 0)
+    const filteredSchools = schools.filter((school) => {
+      const matchesName = !nameFilter || school.name.toLowerCase().includes(nameFilter)
+      const matchesActive = activeFilter == null || String(school.active) === activeFilter
+
+      return matchesName && matchesActive
+    })
+    const items = filteredSchools.slice(offset, offset + limit)
+
+    return HttpResponse.json({ items, total: filteredSchools.length, limit, offset })
+  }),
+  http.post('/api/v1/auth/schools', async ({ request }) => {
+    const payload = (await request.json()) as { name: string; email: string; password: string; tax_id?: string; address?: string; phone?: string }
+    const timestamp = '2026-04-12T10:00:00Z'
+    const school: School = {
+      id: `school-${schoolCounter}`,
+      name: payload.name,
+      email: payload.email,
+      tax_id: payload.tax_id ?? null,
+      address: payload.address ?? null,
+      phone: payload.phone ?? null,
+      active: true,
+      created_at: timestamp,
+      updated_at: timestamp,
+    }
+
+    schoolCounter += 1
+    schools = [school, ...schools]
+
+    return HttpResponse.json(
+      {
+        school,
+        admin_user: {
+          id: `school-admin-${school.id}`,
+          email: payload.email,
+          full_name: `${payload.name} Admin`,
+          role: 'school_admin',
+          school_id: school.id,
+          is_active: true,
+          created_at: timestamp,
+          updated_at: timestamp,
+        },
+      },
+      { status: 201 },
+    )
+  }),
+  http.delete('/api/v1/auth/schools/:schoolId', ({ params }) => {
+    const schoolId = String(params.schoolId)
+    const existingSchool = schools.find((school) => school.id === schoolId)
+
+    if (!existingSchool) {
+      return HttpResponse.json({ detail: 'school_not_found' }, { status: 404 })
+    }
+
+    schools = schools.map((school) => (school.id === schoolId ? { ...school, active: false } : school))
+
+    return new HttpResponse(null, { status: 204 })
+  }),
   http.get('/core-api/v1/permits', () => HttpResponse.json({ items: permitResponse })),
   http.get('/core-api/v1/topics', () => HttpResponse.json({ items: topicResponse })),
   http.post('/core-api/v1/tests/generate', async ({ request }) => {
@@ -363,4 +470,8 @@ function cloneAiConversations(conversations: AiConversation[]) {
 
 function cloneAiMessages(messages: AiMessage[]) {
   return messages.map((message) => ({ ...message }))
+}
+
+function cloneSchools(items: School[]) {
+  return items.map((school) => ({ ...school }))
 }
