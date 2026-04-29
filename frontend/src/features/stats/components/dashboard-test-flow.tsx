@@ -14,6 +14,8 @@ import {
   TruckIcon,
 } from '../../../components/icons'
 import { ApiError } from '../../../lib/http'
+import type { AuthUser } from '../../auth/types'
+import { filterPermitsForStudent } from '../../auth/student-access'
 import { useI18n } from '../../i18n'
 import {
   TestExamInterface,
@@ -34,6 +36,7 @@ type DashboardTestFlowProps = {
   accessToken: string | null
   onBackToDashboard: () => void
   backButtonLabel?: string
+  user?: AuthUser | null
 }
 
 type FlowStep = 'permit-selection' | 'mode-selection' | 'test-session' | 'test-result' | 'test-review'
@@ -356,7 +359,7 @@ function getPermitPresentation(permit: Permit, language: 'es' | 'en'): PermitPre
   )
 }
 
-export function DashboardTestFlow({ accessToken, onBackToDashboard, backButtonLabel = 'Volver al dashboard' }: DashboardTestFlowProps) {
+export function DashboardTestFlow({ accessToken, onBackToDashboard, backButtonLabel = 'Volver al dashboard', user = null }: DashboardTestFlowProps) {
   const { language } = useI18n()
   const permitsQuery = usePermits(accessToken)
   const generateTestMutation = useGenerateTest(accessToken)
@@ -433,12 +436,17 @@ export function DashboardTestFlow({ accessToken, onBackToDashboard, backButtonLa
   const submitTestMutation = useSubmitTest(accessToken, activeTest?.id ?? null)
 
   const permits = useMemo(() => {
-    if (permitsQuery.data && permitsQuery.data.length > 0) {
-      return permitsQuery.data
+    const fallbackPermits = language === 'en' ? fallbackPermitsEn : fallbackPermitsEs
+    const sourcePermits = permitsQuery.data && permitsQuery.data.length > 0 ? permitsQuery.data : fallbackPermits
+    const visiblePermits = filterPermitsForStudent(sourcePermits, user)
+
+    if (visiblePermits.length > 0) {
+      return visiblePermits
     }
 
-    return language === 'en' ? fallbackPermitsEn : fallbackPermitsEs
-  }, [language, permitsQuery.data])
+    const fallbackVisiblePermits = filterPermitsForStudent(fallbackPermits, user)
+    return fallbackVisiblePermits.length > 0 ? fallbackVisiblePermits : sourcePermits
+  }, [language, permitsQuery.data, user])
 
   function handlePermitSelect(permit: Permit) {
     resetExamState()

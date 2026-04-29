@@ -58,6 +58,80 @@ def test_sql_user_repo_list_by_school(db_session):
     assert active_students[0].email == "s1@test.com"
 
 
+def test_sql_user_repo_list_by_school_supports_search_sort_and_student_only_filter(
+    db_session,
+):
+    from app.infrastructure.database.models import UserORM
+
+    repo = SqlUserRepository(db_session)
+    school_id = uuid4()
+
+    db_session.add(
+        SchoolORM(
+            id=school_id,
+            name="Search School",
+            active=True,
+            email="search@school.com",
+            tax_id="tax",
+            address="",
+            phone="",
+        )
+    )
+    db_session.commit()
+
+    repo.create(
+        User(
+            id=uuid4(),
+            school_id=school_id,
+            document_id="DOC-2",
+            email="zoe@student.com",
+            role="student",
+            full_name="Zoe Student",
+            is_active=True,
+        ),
+        "hash1",
+    )
+    repo.create(
+        User(
+            id=uuid4(),
+            school_id=school_id,
+            document_id="DOC-1",
+            email="amy@student.com",
+            role="student",
+            full_name="Amy Student",
+            is_active=True,
+        ),
+        "hash2",
+    )
+
+    db_session.add(
+        UserORM(
+            id=uuid4(),
+            school_id=school_id,
+            email="admin@school.com",
+            password_hash="hash-admin",
+            role="school_admin",
+            full_name="Admin User",
+            is_active=True,
+        )
+    )
+    db_session.commit()
+
+    students, total = repo.list_by_school(
+        school_id,
+        limit=10,
+        offset=0,
+        search="student",
+        sort="email",
+    )
+
+    assert total == 2
+    assert [student.email for student in students] == [
+        "amy@student.com",
+        "zoe@student.com",
+    ]
+
+
 def test_sql_user_repo_get_password_hash(db_session):
     repo = SqlUserRepository(db_session)
     school_id = uuid4()

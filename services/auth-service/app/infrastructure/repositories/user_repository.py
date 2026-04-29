@@ -1,5 +1,6 @@
 from uuid import UUID
 
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.domain.models import User
@@ -51,6 +52,8 @@ class SqlUserRepository(UserRepository):
         offset: int,
         active: bool | None = None,
         license_code: str | None = None,
+        search: str | None = None,
+        sort: str | None = None,
     ) -> tuple[list[User], int]:
         query = self._db.query(orm.UserORM).filter_by(
             school_id=school_id, role="student"
@@ -61,6 +64,27 @@ class SqlUserRepository(UserRepository):
             query = query.join(orm.StudentLicenseORM).filter(
                 orm.StudentLicenseORM.license_code == license_code
             )
+        if search:
+            search_term = f"%{search.strip()}%"
+            query = query.filter(
+                or_(
+                    orm.UserORM.full_name.ilike(search_term),
+                    orm.UserORM.email.ilike(search_term),
+                    orm.UserORM.document_id.ilike(search_term),
+                )
+            )
+        if sort:
+            descending = sort.startswith("-")
+            field_name = sort.lstrip("-")
+            sortable_fields = {
+                "full_name": orm.UserORM.full_name,
+                "email": orm.UserORM.email,
+                "created_at": orm.UserORM.created_at,
+                "is_active": orm.UserORM.is_active,
+            }
+            column = sortable_fields.get(field_name)
+            if column is not None:
+                query = query.order_by(column.desc() if descending else column.asc())
         total = query.count()
         rows = query.offset(offset).limit(limit).all()
         return [_to_domain(r) for r in rows], total

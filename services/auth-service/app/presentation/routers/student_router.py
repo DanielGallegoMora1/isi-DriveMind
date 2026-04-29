@@ -66,12 +66,16 @@ def list_students(
     offset: Annotated[int, Query(ge=0)] = 0,
     active: Annotated[bool | None, Query()] = None,
     license: Annotated[str | None, Query()] = None,
+    search: Annotated[str | None, Query()] = None,
+    sort: Annotated[
+        str | None, Query(pattern=r"^-?(full_name|email|created_at|is_active)$")
+    ] = None,
 ) -> PaginatedStudentsResponse:
     user_repo = SqlUserRepository(db)
     license_repo = SqlLicenseRepository(db)
     school_id = UUID(current["school_id"])
     students, total = student_use_cases.list_students(
-        school_id, limit, offset, user_repo, active, license
+        school_id, limit, offset, user_repo, active, license, search, sort
     )
     return PaginatedStudentsResponse(
         items=[_build_student_response(s, license_repo) for s in students],

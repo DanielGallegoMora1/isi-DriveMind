@@ -9,6 +9,7 @@ const studentUser: AuthUser = {
   id: 'user-1',
   email: 'student@drivemind.test',
   full_name: 'Lucia Perez',
+  licenses: ['B'],
   role: 'student',
   school_id: null,
   is_active: true,
@@ -37,6 +38,7 @@ function renderAppShell(language: Language, user?: AuthUser, initialRoute = '/')
             <Route element={<AppShell />}>
               <Route element={<div>Outlet content</div>} path="/" />
               <Route element={<div>Admin outlet</div>} path="/admin" />
+              <Route element={<div>School admin outlet</div>} path="/school-admin" />
             </Route>
           </Routes>
         </AuthContext.Provider>
@@ -68,6 +70,7 @@ describe('AppShell', () => {
     expect(screen.getByRole('link', { name: 'Estadísticas' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Ajustes' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Cerrar sesión' })).toBeInTheDocument()
+    expect(screen.getByText('Alumno · Permiso B')).toBeInTheDocument()
   })
 
   it('renders system-admin shell without student links', () => {
@@ -87,5 +90,26 @@ describe('AppShell', () => {
     expect(screen.queryByRole('link', { name: 'My Tests' })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Statistics' })).not.toBeInTheDocument()
     expect(screen.getByText('System admin')).toBeInTheDocument()
+  })
+
+  it('renders school-admin shell with dedicated students navigation', () => {
+    renderAppShell('es', {
+      id: 'school-admin-1',
+      email: 'admin@school.test',
+      full_name: 'Marta Ruiz',
+      role: 'school_admin',
+      school_id: 'school-centro',
+      school_name: 'Autoescuela Centro',
+      is_active: true,
+      created_at: null,
+      updated_at: null,
+    }, '/school-admin')
+
+    expect(screen.getByRole('heading', { name: 'DriveMind' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Gestión de alumnos' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Ajustes' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Mis Tests' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Estadísticas' })).not.toBeInTheDocument()
+    expect(screen.getByText('Autoescuela Centro')).toBeInTheDocument()
   })
 })

@@ -7,7 +7,7 @@ import { MyTestsOverview } from '../features/tests'
 type TestsView = 'overview' | 'test-flow'
 
 export function TestsPage() {
-  const { accessToken } = useAuth()
+  const { accessToken, user } = useAuth()
   const { language } = useI18n()
   const [view, setView] = useState<TestsView>('overview')
 
@@ -17,6 +17,7 @@ export function TestsPage() {
           accessToken={accessToken}
           backButtonLabel={language === 'en' ? 'Back to My Tests' : 'Volver a Mis Tests'}
           onBackToDashboard={() => setView('overview')}
+          user={user}
         />
       )
   }

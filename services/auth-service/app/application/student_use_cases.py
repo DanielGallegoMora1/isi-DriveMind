@@ -5,6 +5,13 @@ from app.domain.models import StudentLicense, User
 from app.domain.ports import StudentLicenseRepository, UserRepository
 
 
+def _get_school_student(student_id: UUID, school_id: UUID, user_repo: UserRepository) -> User:
+    user = user_repo.get_by_id(student_id)
+    if not user or user.role != "student" or user.school_id != school_id:
+        raise ValueError("student_not_found")
+    return user
+
+
 def create_student(
     email: str,
     password: str,
@@ -45,15 +52,22 @@ def list_students(
     user_repo: UserRepository,
     active: bool | None = None,
     license_code: str | None = None,
+    search: str | None = None,
+    sort: str | None = None,
 ) -> tuple[list[User], int]:
-    return user_repo.list_by_school(school_id, limit, offset, active, license_code)
+    return user_repo.list_by_school(
+        school_id,
+        limit,
+        offset,
+        active,
+        license_code,
+        search,
+        sort,
+    )
 
 
 def get_student(student_id: UUID, school_id: UUID, user_repo: UserRepository) -> User:
-    user = user_repo.get_by_id(student_id)
-    if not user or user.school_id != school_id:
-        raise ValueError("student_not_found")
-    return user
+    return _get_school_student(student_id, school_id, user_repo)
 
 
 def update_student(
@@ -64,9 +78,7 @@ def update_student(
     active: bool | None,
     user_repo: UserRepository,
 ) -> User:
-    user = user_repo.get_by_id(student_id)
-    if not user or user.school_id != school_id:
-        raise ValueError("student_not_found")
+    user = _get_school_student(student_id, school_id, user_repo)
     if full_name is not None:
         user.full_name = full_name
     if document_id is not None:
@@ -83,9 +95,7 @@ def assign_licenses(
     user_repo: UserRepository,
     license_repo: StudentLicenseRepository,
 ) -> list[StudentLicense]:
-    user = user_repo.get_by_id(student_id)
-    if not user or user.school_id != school_id:
-        raise ValueError("student_not_found")
+    _get_school_student(student_id, school_id, user_repo)
     return license_repo.assign(student_id, license_codes)
 
 
@@ -96,7 +106,5 @@ def revoke_license(
     user_repo: UserRepository,
     license_repo: StudentLicenseRepository,
 ) -> None:
-    user = user_repo.get_by_id(student_id)
-    if not user or user.school_id != school_id:
-        raise ValueError("student_not_found")
+    _get_school_student(student_id, school_id, user_repo)
     license_repo.revoke(student_id, license_code)

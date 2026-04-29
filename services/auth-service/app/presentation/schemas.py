@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 
 # ─── Auth ────────────────────────────────────────────────────────────────────
@@ -105,7 +105,7 @@ class StudentResponse(BaseModel):
     full_name: str
     document_id: str | None
     licenses: list[str] = []
-    is_active: bool
+    active: bool = Field(validation_alias="is_active")
     created_at: datetime | None
     updated_at: datetime | None
 

@@ -53,6 +53,7 @@ class FakeUserRepository(UserRepository):
         offset: int,
         active: bool | None = None,
         license_code: str | None = None,
+        search: str | None = None,
         sort: str | None = None,
     ) -> tuple[list[User], int]:
         matches = [
@@ -62,6 +63,23 @@ class FakeUserRepository(UserRepository):
         ]
         if active is not None:
             matches = [u for u in matches if u.is_active == active]
+        if search:
+            lowered = search.strip().lower()
+            matches = [
+                u
+                for u in matches
+                if lowered in u.full_name.lower()
+                or lowered in u.email.lower()
+                or (u.document_id and lowered in u.document_id.lower())
+            ]
+        if sort:
+            descending = sort.startswith("-")
+            field_name = sort.lstrip("-")
+            matches = sorted(
+                matches,
+                key=lambda user: getattr(user, field_name),
+                reverse=descending,
+            )
         return matches[offset : offset + limit], len(matches)
 
 

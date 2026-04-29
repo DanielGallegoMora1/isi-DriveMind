@@ -1,6 +1,8 @@
 import { screen } from '@testing-library/react'
+import { http, HttpResponse } from 'msw'
 import userEvent from '@testing-library/user-event'
 import { TestsPage } from './tests-page'
+import { server } from '../test/msw/server'
 import { renderWithProviders } from '../test/utils'
 
 describe('TestsPage', () => {
@@ -118,5 +120,44 @@ describe('TestsPage', () => {
 
     expect(await screen.findByText('Question map')).toBeInTheDocument()
     expect(screen.getByText((_, node) => node?.textContent === 'Question 1 of 30')).toBeInTheDocument()
+  })
+
+  it('prioriza los permisos asignados al alumno cuando existen en frontend', async () => {
+    const user = userEvent.setup()
+
+    server.use(
+      http.get('/core-api/v1/permits', () =>
+        HttpResponse.json({
+          items: [
+            { id: 1, code: 'AM', name: 'Ciclomotores' },
+            { id: 2, code: 'B', name: 'Turismos' },
+            { id: 3, code: 'C', name: 'Camiones pesados' },
+          ],
+        }),
+      ),
+    )
+
+    renderWithProviders(
+      <TestsPage />,
+      {
+        user: {
+          id: 'user-1',
+          email: 'student@drivemind.test',
+          full_name: 'Estudiante Demo',
+          role: 'student',
+          licenses: ['AM', 'B'],
+          school_id: null,
+          is_active: true,
+          created_at: null,
+          updated_at: null,
+        },
+      },
+    )
+
+    await user.click((await screen.findAllByRole('button', { name: /^realizar test$/i }))[0])
+
+    expect(screen.getByRole('button', { name: /comenzar permiso am - ciclomotores/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /comenzar permiso b - turismos/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /comenzar permiso c - camiones pesados/i })).not.toBeInTheDocument()
   })
 })

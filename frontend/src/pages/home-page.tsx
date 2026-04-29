@@ -9,7 +9,7 @@ export function HomePage() {
   const [view, setView] = useState<HomeView>('dashboard')
 
   if (view === 'test-flow') {
-    return <DashboardTestFlow accessToken={accessToken} onBackToDashboard={() => setView('dashboard')} />
+    return <DashboardTestFlow accessToken={accessToken} onBackToDashboard={() => setView('dashboard')} user={user} />
   }
 
   return <StatsOverview accessToken={accessToken} user={user} onStartTest={() => setView('test-flow')} />

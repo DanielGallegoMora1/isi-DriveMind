@@ -38,6 +38,13 @@ function renderWithAuth(route: string, language: Language, authOverrides?: Parti
             <Route element={<RoleProtectedLayout allowedRoles={["system_admin"]} fallbackPath="/" />}>
               <Route element={<div>Admin content</div>} path="/admin" />
             </Route>
+            <Route element={<RoleProtectedLayout allowedRoles={["school_admin"]} fallbackPath="/" />}>
+              <Route element={<div>School admin content</div>} path="/school-admin" />
+            </Route>
+            <Route element={<RoleProtectedLayout allowedRoles={["student"]} fallbackPath="/" />}>
+              <Route element={<div>Tests content</div>} path="/tests" />
+              <Route element={<div>Stats content</div>} path="/stats" />
+            </Route>
             <Route element={<LoginOnlyOutlet />}>
               <Route element={<div>Login content</div>} path="/login" />
             </Route>
@@ -84,6 +91,74 @@ describe('App loading gates', () => {
     renderWithAuth('/admin', 'en')
 
     expect(screen.queryByText('Admin content')).not.toBeInTheDocument()
+    expect(screen.getByText('Protected content')).toBeInTheDocument()
+  })
+
+  it('renders /school-admin for school admins', () => {
+    renderWithAuth('/school-admin', 'es', {
+      user: {
+        id: 'school-admin-1',
+        email: 'admin@school.test',
+        full_name: 'Marta Ruiz',
+        role: 'school_admin',
+        school_id: 'school-centro',
+        school_name: 'Autoescuela Centro',
+        is_active: true,
+        created_at: null,
+        updated_at: null,
+      },
+    })
+
+    expect(screen.getByText('School admin content')).toBeInTheDocument()
+  })
+
+  it('blocks /school-admin for students', () => {
+    renderWithAuth('/school-admin', 'es')
+
+    expect(screen.queryByText('School admin content')).not.toBeInTheDocument()
+    expect(screen.getByText('Protected content')).toBeInTheDocument()
+  })
+
+  it('renders student-only routes for students', () => {
+    renderWithAuth('/tests', 'es')
+
+    expect(screen.getByText('Tests content')).toBeInTheDocument()
+  })
+
+  it('blocks /tests for school admins', () => {
+    renderWithAuth('/tests', 'es', {
+      user: {
+        id: 'school-admin-1',
+        email: 'admin@school.test',
+        full_name: 'Marta Ruiz',
+        role: 'school_admin',
+        school_id: 'school-centro',
+        school_name: 'Autoescuela Centro',
+        is_active: true,
+        created_at: null,
+        updated_at: null,
+      },
+    })
+
+    expect(screen.queryByText('Tests content')).not.toBeInTheDocument()
+    expect(screen.getByText('Protected content')).toBeInTheDocument()
+  })
+
+  it('blocks /stats for system admins', () => {
+    renderWithAuth('/stats', 'en', {
+      user: {
+        id: 'admin-1',
+        email: 'system.admin@example.com',
+        full_name: 'System Admin',
+        role: 'system_admin',
+        school_id: null,
+        is_active: true,
+        created_at: null,
+        updated_at: null,
+      },
+    })
+
+    expect(screen.queryByText('Stats content')).not.toBeInTheDocument()
     expect(screen.getByText('Protected content')).toBeInTheDocument()
   })
 

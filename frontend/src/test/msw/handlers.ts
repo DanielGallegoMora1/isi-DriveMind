@@ -28,6 +28,23 @@ type School = {
   updated_at: string | null
 }
 
+type Student = {
+  id: string
+  email: string
+  full_name: string
+  document_id: string | null
+  phone: string | null
+  licenses: string[]
+  active: boolean
+  created_at: string | null
+  updated_at: string | null
+  tests_completed: number | null
+  tests_this_week: number | null
+  pass_rate_pct: number | null
+  average_score: number | null
+  last_activity_at: string | null
+}
+
 const permitResponse = [
   { id: 1, code: 'B', name: 'Turismos' },
 ]
@@ -257,12 +274,113 @@ const initialSchools: School[] = [
   },
 ]
 
+const initialStudents: Student[] = [
+  {
+    id: 'student-1',
+    email: 'lucia@drivemind.test',
+    full_name: 'Lucía Pérez',
+    document_id: '11111111A',
+    phone: '+34 600 111 111',
+    licenses: ['B'],
+    active: true,
+    created_at: '2025-09-10T09:00:00Z',
+    updated_at: '2026-04-29T10:45:00Z',
+    tests_completed: 42,
+    tests_this_week: 38,
+    pass_rate_pct: 92,
+    average_score: 8.9,
+    last_activity_at: '2026-04-29T10:45:00Z',
+  },
+  {
+    id: 'student-2',
+    email: 'sofia@drivemind.test',
+    full_name: 'Sofía Navarro',
+    document_id: '22222222B',
+    phone: '+34 600 222 222',
+    licenses: ['A1'],
+    active: true,
+    created_at: '2025-11-15T12:00:00Z',
+    updated_at: '2026-04-28T18:20:00Z',
+    tests_completed: 31,
+    tests_this_week: 41,
+    pass_rate_pct: 84,
+    average_score: 8.4,
+    last_activity_at: '2026-04-28T18:20:00Z',
+  },
+  {
+    id: 'student-3',
+    email: 'daniel@drivemind.test',
+    full_name: 'Daniel Ortega',
+    document_id: '33333333C',
+    phone: '+34 600 333 333',
+    licenses: ['B'],
+    active: true,
+    created_at: '2025-12-03T16:30:00Z',
+    updated_at: '2026-04-26T09:30:00Z',
+    tests_completed: 56,
+    tests_this_week: 35,
+    pass_rate_pct: 78,
+    average_score: 7.8,
+    last_activity_at: '2026-04-26T09:30:00Z',
+  },
+  {
+    id: 'student-4',
+    email: 'alba@drivemind.test',
+    full_name: 'Alba Martín',
+    document_id: '44444444D',
+    phone: '+34 600 444 444',
+    licenses: ['B'],
+    active: true,
+    created_at: '2026-01-17T08:10:00Z',
+    updated_at: '2026-04-25T19:10:00Z',
+    tests_completed: 24,
+    tests_this_week: 56,
+    pass_rate_pct: 74,
+    average_score: 7.2,
+    last_activity_at: '2026-04-25T19:10:00Z',
+  },
+  {
+    id: 'student-5',
+    email: 'hugo@drivemind.test',
+    full_name: 'Hugo Serrano',
+    document_id: '55555555E',
+    phone: '+34 600 555 555',
+    licenses: ['C'],
+    active: true,
+    created_at: '2026-02-20T11:45:00Z',
+    updated_at: '2026-04-24T12:35:00Z',
+    tests_completed: 19,
+    tests_this_week: 48,
+    pass_rate_pct: 86,
+    average_score: 8.7,
+    last_activity_at: '2026-04-24T12:35:00Z',
+  },
+  {
+    id: 'student-6',
+    email: 'nerea@drivemind.test',
+    full_name: 'Nerea Gil',
+    document_id: '66666666F',
+    phone: null,
+    licenses: ['B'],
+    active: false,
+    created_at: '2026-03-11T14:25:00Z',
+    updated_at: '2026-04-20T17:00:00Z',
+    tests_completed: 12,
+    tests_this_week: 0,
+    pass_rate_pct: 66,
+    average_score: 6.4,
+    last_activity_at: '2026-04-20T17:00:00Z',
+  },
+]
+
 let aiConversationCounter = 2
 let aiMessageCounter = 3
 let aiConversations = cloneAiConversations(initialAiConversations)
 let aiMessages = cloneAiMessages(initialAiMessages)
 let schoolCounter = 3
 let schools = cloneSchools(initialSchools)
+let studentCounter = initialStudents.length + 1
+let students = cloneStudents(initialStudents)
 
 export function resetAiAssistantMockState() {
   aiConversationCounter = 2
@@ -274,6 +392,11 @@ export function resetAiAssistantMockState() {
 export function resetSchoolsMockState() {
   schoolCounter = 3
   schools = cloneSchools(initialSchools)
+}
+
+export function resetStudentsMockState() {
+  studentCounter = initialStudents.length + 1
+  students = cloneStudents(initialStudents)
 }
 
 export function setAiAssistantMockState(conversations: AiConversation[], messages: AiMessage[]) {
@@ -346,6 +469,65 @@ export const handlers = [
     schools = schools.map((school) => (school.id === schoolId ? { ...school, active: false } : school))
 
     return new HttpResponse(null, { status: 204 })
+  }),
+  http.get('/api/v1/auth/students', ({ request }) => {
+    const url = new URL(request.url)
+    const licenseFilter = url.searchParams.get('license')?.trim().toUpperCase()
+    const activeFilter = url.searchParams.get('active')
+    const limit = Number(url.searchParams.get('limit') ?? 100)
+    const offset = Number(url.searchParams.get('offset') ?? 0)
+    const filteredStudents = students.filter((student) => {
+      const matchesLicense = !licenseFilter || student.licenses.includes(licenseFilter)
+      const matchesActive = activeFilter == null || String(student.active) === activeFilter
+
+      return matchesLicense && matchesActive
+    })
+    const items = filteredStudents.slice(offset, offset + limit)
+
+    return HttpResponse.json({ items, total: filteredStudents.length, limit, offset })
+  }),
+  http.post('/api/v1/auth/students', async ({ request }) => {
+    const payload = (await request.json()) as {
+      email?: string
+      full_name?: string
+      password?: string
+      licenses?: string[]
+    }
+
+    const normalizedEmail = payload.email?.trim().toLowerCase() ?? ''
+
+    if (!normalizedEmail || !payload.full_name?.trim() || !payload.password || !payload.licenses?.length) {
+      return HttpResponse.json({ detail: 'validation_error' }, { status: 422 })
+    }
+
+    if (students.some((student) => student.email.toLowerCase() === normalizedEmail)) {
+      return HttpResponse.json({ detail: 'email_already_exists' }, { status: 409 })
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 60))
+
+    const timestamp = `2026-04-29T12:${String(studentCounter).padStart(2, '0')}:00Z`
+    const student: Student = {
+      id: `student-${studentCounter}`,
+      active: true,
+      average_score: null,
+      created_at: timestamp,
+      document_id: null,
+      email: normalizedEmail,
+      full_name: payload.full_name.trim(),
+      last_activity_at: null,
+      licenses: payload.licenses.map((license) => license.trim().toUpperCase()).filter(Boolean),
+      pass_rate_pct: null,
+      phone: null,
+      tests_completed: 0,
+      tests_this_week: 0,
+      updated_at: timestamp,
+    }
+
+    studentCounter += 1
+    students = [student, ...students]
+
+    return HttpResponse.json({ student }, { status: 201 })
   }),
   http.get('/core-api/v1/permits', () => HttpResponse.json({ items: permitResponse })),
   http.get('/core-api/v1/topics', () => HttpResponse.json({ items: topicResponse })),
@@ -474,4 +656,8 @@ function cloneAiMessages(messages: AiMessage[]) {
 
 function cloneSchools(items: School[]) {
   return items.map((school) => ({ ...school }))
+}
+
+function cloneStudents(items: Student[]) {
+  return items.map((student) => ({ ...student, licenses: [...student.licenses] }))
 }

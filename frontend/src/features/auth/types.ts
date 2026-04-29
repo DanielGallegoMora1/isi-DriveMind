@@ -1,11 +1,21 @@
 export type UserRole = 'student' | 'school_admin' | 'system_admin'
 
+export type AuthUserLicense =
+  | string
+  | {
+      code: string
+      name?: string | null
+    }
+
 export type AuthUser = {
   id: string
   email: string
   full_name: string
   role: UserRole | string
+  licenses?: AuthUserLicense[] | null
   school_id: string | null
+  school_name?: string | null
+  phone?: string | null
   is_active: boolean
   created_at: string | null
   updated_at: string | null

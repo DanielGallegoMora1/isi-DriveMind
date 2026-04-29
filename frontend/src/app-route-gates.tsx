@@ -1,6 +1,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { AppShell } from './components/app-shell'
 import { useAuth } from './features/auth/auth-context'
+import { getRoleHomePath, hasAllowedRole } from './features/auth/student-access'
 import type { UserRole } from './features/auth/types'
 import { useI18n } from './features/i18n'
 
@@ -55,8 +56,8 @@ export function RoleProtectedLayout({ allowedRoles, fallbackPath = '/' }: RolePr
     return <Navigate replace state={{ from: location }} to="/login" />
   }
 
-  if (!allowedRoles.includes(user?.role as UserRole)) {
-    return <Navigate replace to={fallbackPath} />
+  if (!hasAllowedRole(user, allowedRoles)) {
+    return <Navigate replace to={fallbackPath || getRoleHomePath(user?.role)} />
   }
 
   return <AppShell />

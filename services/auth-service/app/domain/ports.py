@@ -34,6 +34,8 @@ class UserRepository(ABC):
         offset: int,
         active: bool | None = None,
         license_code: str | None = None,
+        search: str | None = None,
+        sort: str | None = None,
     ) -> tuple[list[User], int]: ...
 
 

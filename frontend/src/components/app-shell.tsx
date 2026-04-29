@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../features/auth'
+import { getStudentPermitSummary } from '../features/auth/student-access'
 import { formatRole, useI18n } from '../features/i18n'
 import { LogOut } from 'lucide-react'
 import { AiChatIcon, HomeIcon, SettingsIcon, StatsIcon, TestsIcon } from './icons'
@@ -9,12 +10,14 @@ export function AppShell() {
   const { logout, user } = useAuth()
   const { language } = useI18n()
   const isSystemAdmin = user?.role === 'system_admin'
+  const isSchoolAdmin = user?.role === 'school_admin'
   const initials = (user?.full_name ?? 'DM')
     .split(' ')
     .filter(Boolean)
     .slice(0, 2)
     .map((chunk) => chunk[0]?.toUpperCase() ?? '')
     .join('')
+  const studentPermitSummary = getStudentPermitSummary(user, language)
   const navigationItems = isSystemAdmin
     ? language === 'en'
       ? [
@@ -23,6 +26,11 @@ export function AppShell() {
         ]
       : [
           { to: '/admin', label: 'Autoescuelas', icon: HomeIcon },
+          { to: '/settings', label: 'Ajustes', icon: SettingsIcon },
+        ]
+    : isSchoolAdmin
+      ? [
+          { to: '/school-admin', label: 'Gestión de alumnos', icon: HomeIcon },
           { to: '/settings', label: 'Ajustes', icon: SettingsIcon },
         ]
     : language === 'en'
@@ -42,7 +50,11 @@ export function AppShell() {
         ]
   const subtitle = isSystemAdmin
     ? formatRole(user?.role, language)
-    : `${formatRole(user?.role, language)} · ${language === 'en' ? 'Permit B' : 'Permiso B'}`
+    : isSchoolAdmin
+      ? user?.school_name?.trim() || 'Autoescuela asignada'
+      : studentPermitSummary
+        ? `${formatRole(user?.role, language)} · ${studentPermitSummary}`
+        : formatRole(user?.role, language)
   const copy = isSystemAdmin
     ? language === 'en'
       ? {
@@ -53,6 +65,12 @@ export function AppShell() {
       : {
           title: 'Panel de administración',
           description: 'Gestiona autoescuelas y accesos de la plataforma desde un espacio seguro.',
+          logout: 'Cerrar sesión',
+        }
+    : isSchoolAdmin
+      ? {
+          title: 'DriveMind',
+          description: 'Gestión de alumnos para autoescuelas',
           logout: 'Cerrar sesión',
         }
     : language === 'en'
