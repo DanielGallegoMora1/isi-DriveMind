@@ -23,6 +23,12 @@ cd isi-DriveMind
 docker compose up --build
 ```
 
+También puedes usar el Makefile incluido:
+
+```bash
+make up
+```
+
 3. Accede a la aplicación y servicios:
 
 - Frontend: `http://localhost:5173`
@@ -74,50 +80,82 @@ Si `HF_TOKEN` no está definido, el `ai-service` se levanta igualmente, pero las
 
 ## Comandos Útiles
 
+El proyecto incluye un `Makefile` para simplificar las operaciones habituales.
+
+Levantar el entorno completo:
+
+```bash
+make up
+```
+
+Comprobar el estado de los contenedores y sus healthchecks:
+
+```bash
+make ps
+```
+
+Ejecutar comprobaciones básicas post-despliegue:
+
+```bash
+make smoke
+```
+
+Ver logs de los servicios:
+
+```bash
+make logs
+```
+
 Detener los contenedores:
 
 ```bash
-docker compose down
+make down
 ```
 
 Resetear bases de datos y volúmenes:
 
 ```bash
-docker compose down -v
+make reset
 ```
 
 Reconstruir y levantar el entorno:
 
 ```bash
-docker compose up --build
+make up
 ```
 
 ## Desarrollo Y Tests
 
 Los tests pueden ejecutarse desde Docker, sin instalar dependencias directamente en el equipo local.
 
+Ejecutar todos los tests disponibles:
+
+```bash
+make test
+```
+
 Frontend:
 
 ```bash
-docker compose run --rm frontend npm run test
-docker compose run --rm frontend npm run lint
-docker compose run --rm frontend npm run build
+make test-frontend
 ```
 
 Backend auth:
 
 ```bash
-docker compose run --rm auth-service pytest
+make test-auth
 ```
 
 Backend core:
 
 ```bash
-docker compose run --rm core-service pytest
+make test-core
 ```
 
 Backend AI:
 
 ```bash
-docker compose run --rm ai-service pytest tests
+make test-ai
 ```
+
+Además, `docker-compose.yml` define healthchecks para las bases de datos, servicios backend y frontend. Esto permite detectar rápidamente si un contenedor está levantado pero no responde correctamente.
