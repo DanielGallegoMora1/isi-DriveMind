@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from app.application.ai_use_cases import build_provider_messages
+from app.huggingFace_client import SYSTEM_PROMPT
 
 
 def test_build_provider_messages_uses_default_window_order_and_current_user_last():
@@ -54,3 +55,8 @@ def test_build_provider_messages_includes_all_when_history_shorter_than_window()
     assert len(payload) == 4
     assert payload[1]["content"] == "a"
     assert payload[2]["content"] == "b"
+
+
+def test_system_prompt_explicitly_limits_answer_to_latest_user_message():
+    assert "ÚLTIMO mensaje enviado por el usuario" in SYSTEM_PROMPT
+    assert "contexto es SOLO de referencia" in SYSTEM_PROMPT
