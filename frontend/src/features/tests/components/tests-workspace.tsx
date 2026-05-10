@@ -123,7 +123,7 @@ export function TestsWorkspace({ accessToken }: TestsWorkspaceProps) {
           { label: 'Por licencia', value: 'PERMIT' as const, description: '30 preguntas del permiso seleccionado.' },
           { label: 'Por tema', value: 'TOPIC' as const, description: 'Practica un tema concreto del permiso.' },
           { label: 'Random', value: 'RANDOM' as const, description: 'Mezcla libre de preguntas del permiso.' },
-          { label: 'Falladas', value: 'FAILED' as const, description: 'Repite tus preguntas falladas si existen.' },
+          { label: 'Preguntas falladas', value: 'FAILED' as const, description: 'Repite las preguntas que hayas fallado, si hay disponibles.' },
         ],
         missingPermit: 'Selecciona una licencia antes de generar el test.',
         missingTopic: 'Elige un tema para generar un test específico.',

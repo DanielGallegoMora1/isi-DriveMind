@@ -214,7 +214,7 @@ const testOptionsEs: TestOption[] = [
   {
     id: 'failed',
     title: 'Preguntas falladas',
-    description: 'Revisa tus errores más frecuentes y convertí esos tropiezos en aprendizaje real.',
+    description: 'Revisa tus errores más frecuentes y convierte esos fallos en aprendizaje real.',
     icon: 'refresh',
     accent: 'red',
   },

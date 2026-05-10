@@ -265,8 +265,8 @@ export function AiChatWorkspace({ accessToken, userName }: AiChatWorkspaceProps)
                       : 'border-[#d9e3ef] bg-white hover:border-[#a8c0e0] hover:bg-[#f8fbff]',
                   )}
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex items-start justify-between gap-3 overflow-hidden">
+                    <div className="flex min-w-0 flex-1 items-center gap-3 overflow-hidden">
                       <span
                         className={clsx(
                           'mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-2xl border',
@@ -278,13 +278,13 @@ export function AiChatWorkspace({ accessToken, userName }: AiChatWorkspaceProps)
                         <MessageSquareText className="size-4" />
                       </span>
 
-                      <div className="min-w-0">
-                        <p className="m-0 line-clamp-1 font-semibold text-[#102540]">
+                      <div className="min-w-0 flex-1 overflow-hidden">
+                        <p className="m-0 truncate break-all font-semibold text-[#102540]">
                            {conversationTitles.get(conversation.id) ?? getConversationTitle(conversation.title, undefined, copy.untitledConversation)}
-                         </p>
-                         <p className="mt-1 mb-0 line-clamp-2 text-sm leading-5 text-[#7b8b9f]">
-                           {conversationPreviews.get(conversation.id) ?? copy.openConversationPreview}
-                         </p>
+                          </p>
+                          <p className="mt-1 mb-0 line-clamp-2 break-all text-sm leading-5 text-[#7b8b9f]">
+                            {conversationPreviews.get(conversation.id) ?? copy.openConversationPreview}
+                          </p>
                       </div>
                     </div>
 

@@ -106,6 +106,31 @@ Ver logs de los servicios:
 make logs
 ```
 
+Generar historial de tests para la cuenta demo `student@example.com`:
+
+```bash
+make seed-stats-demo
+```
+
+Puedes ajustar el número de intentos y el rango de fechas (para el correcto funcionamiento de los gráficos que requieren datos actuales):
+
+
+```bash
+make seed-stats-demo STATS_ATTEMPTS=30 STATS_START_DATE=2026-05-03 STATS_END_DATE=2026-05-10
+```
+
+Generar historial para todos los alumnos creados por rango (`student1@example.com`, `student2@example.com`, etc.):
+
+```bash
+make seed-stats-all
+```
+
+Preparar todo el entorno con preguntas, alumnos y simulaciones de historial (incluyendo la cuenta demo):
+
+```bash
+make seed-all
+```
+
 Detener los contenedores:
 
 ```bash

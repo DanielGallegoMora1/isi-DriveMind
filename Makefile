@@ -16,6 +16,7 @@ STUDENT_START_INDEX ?= 1
 STUDENT_EMAIL_PREFIX ?= student
 STUDENT_EMAIL_DOMAIN ?= example.com
 STUDENT_FULL_NAME_PREFIX ?= MVP Student
+DEMO_STUDENT_EMAIL ?= student@example.com
 STUDENT_PASSWORD ?= Student123!
 STUDENT_LICENSE_CODE ?= B
 STUDENT_DOCUMENT_PREFIX ?= DOC
@@ -26,7 +27,7 @@ STATS_START_DATE ?= 2026-04-19
 STATS_END_DATE ?= 2026-04-26
 STATS_RANDOM_SEED ?= 20260425
 
-.PHONY: help up down reset logs ps health smoke test test-frontend test-auth test-core test-ai seed-questions seed-students seed-stats-all seed-all print-seed-config
+.PHONY: help up down reset logs ps health smoke test test-frontend test-auth test-core test-ai seed-questions seed-students seed-stats-demo seed-stats-all seed-all print-seed-config
 
 help:
 	@printf "Targets disponibles:\n"
@@ -44,6 +45,7 @@ help:
 	@printf "  make test-frontend      # ejecuta tests de frontend\n"
 	@printf "  make seed-questions     # carga banco de preguntas\n"
 	@printf "  make seed-students      # crea alumnos reales\n"
+	@printf "  make seed-stats-demo    # genera historial para student@example.com\n"
 	@printf "  make seed-stats-all     # genera historial para todos los alumnos del rango\n"
 	@printf "  make seed-all           # hace todo junto\n"
 	@printf "  make print-seed-config  # muestra la configuración efectiva\n"
@@ -91,6 +93,7 @@ print-seed-config:
 	@printf "STUDENT_EMAIL_PREFIX=%s\n" "$(STUDENT_EMAIL_PREFIX)"
 	@printf "STUDENT_EMAIL_DOMAIN=%s\n" "$(STUDENT_EMAIL_DOMAIN)"
 	@printf "STUDENT_FULL_NAME_PREFIX=%s\n" "$(STUDENT_FULL_NAME_PREFIX)"
+	@printf "DEMO_STUDENT_EMAIL=%s\n" "$(DEMO_STUDENT_EMAIL)"
 	@printf "STUDENT_PASSWORD=%s\n" "$(STUDENT_PASSWORD)"
 	@printf "STUDENT_LICENSE_CODE=%s\n" "$(STUDENT_LICENSE_CODE)"
 	@printf "STATS_ATTEMPTS=%s\n" "$(STATS_ATTEMPTS)"
@@ -115,6 +118,15 @@ seed-students:
 		--document-prefix "$(STUDENT_DOCUMENT_PREFIX)" \
 		--print-emails-summary
 
+seed-stats-demo:
+	$(COMPOSE) exec -T $(CORE_SERVICE) python scripts/seed_stats_history.py \
+		--email "$(DEMO_STUDENT_EMAIL)" \
+		--password "$(STUDENT_PASSWORD)" \
+		--permit-code "$(STUDENT_LICENSE_CODE)" \
+		--attempts "$(STATS_ATTEMPTS)" \
+		--start-date "$(STATS_START_DATE)" \
+		--end-date "$(STATS_END_DATE)"
+
 seed-stats-all:
 	@start_index=$(STUDENT_START_INDEX); \
 	count=$(STUDENT_COUNT); \
@@ -133,4 +145,4 @@ seed-stats-all:
 			--seed $$(( $(STATS_RANDOM_SEED) + i )); \
 	done
 
-seed-all: up seed-questions seed-students seed-stats-all
+seed-all: up seed-questions seed-students seed-stats-demo seed-stats-all
